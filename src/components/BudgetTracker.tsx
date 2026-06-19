@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Budget, BudgetCategory, CATEGORY_LABELS } from '@/types';
+import { Budget } from '@/types';
 import { updateBudgetLimit } from '@/app/actions/budgets';
+import { ICON_MAP } from './CategoryManager';
 import { useRouter } from 'next/navigation';
 import { 
   PiggyBank, 
@@ -13,7 +14,8 @@ import {
   TrendingUp, 
   AlertTriangle,
   Flame,
-  Percent
+  Percent,
+  MoreHorizontal
 } from 'lucide-react';
 
 interface BudgetTrackerProps {
@@ -99,10 +101,10 @@ export default function BudgetTracker({ initialBudgets, currentMonthYear, onBudg
     setModalError(null);
 
     try {
-      const updated = await updateBudgetLimit(editingBudget.category, currentMonthYear, numLimit);
+      const updated = await updateBudgetLimit(editingBudget.category_id, currentMonthYear, numLimit);
       
       // Update local state
-      setBudgets(prev => prev.map(b => b.category === updated.category ? { ...b, amount_limit: updated.amount_limit } : b));
+      setBudgets(prev => prev.map(b => b.category_id === updated.category_id ? { ...b, amount_limit: updated.amount_limit } : b));
       setIsModalOpen(false);
       setEditingBudget(null);
 
@@ -113,7 +115,7 @@ export default function BudgetTracker({ initialBudgets, currentMonthYear, onBudg
         onBudgetUpdated();
       }
 
-      setToastMessage(`Đã cập nhật hạn mức cho danh mục ${CATEGORY_LABELS[updated.category]}.`);
+      setToastMessage(`Đã cập nhật hạn mức cho danh mục ${updated.category?.name || 'Khác'}.`);
       setTimeout(() => setToastMessage(null), 3000);
     } catch (err: unknown) {
       setModalError(err instanceof Error ? err.message : 'Lỗi khi lưu hạn mức.');
@@ -163,14 +165,17 @@ export default function BudgetTracker({ initialBudgets, currentMonthYear, onBudg
           const limit = Number(budget.amount_limit);
           const percentage = limit > 0 ? Math.min(100, Math.round((spent / limit) * 100)) : 0;
           const ratio = limit > 0 ? spent / limit : 0;
+          const category = budget.category;
+          const categoryName = category?.name || 'Khác';
+          const categoryColor = category?.color || '#9ca3af';
 
           return (
-            <div key={budget.category} className="space-y-2">
+            <div key={budget.category_id} className="space-y-2">
               {/* Row 1: Labels & Edit */}
               <div className="flex justify-between items-baseline">
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-bold text-white">
-                    {CATEGORY_LABELS[budget.category]}
+                    {categoryName}
                   </span>
                   {limit > 0 && ratio > 1.0 && (
                     <span className="text-[8px] font-bold text-neon-rose bg-neon-rose/10 border border-neon-rose/25 px-1.5 py-0.2 rounded uppercase tracking-wide">
@@ -199,7 +204,10 @@ export default function BudgetTracker({ initialBudgets, currentMonthYear, onBudg
               <div className="h-2 w-full bg-[#12141c] rounded-full overflow-hidden border border-brand-border/30">
                 <div
                   className={`h-full rounded-full transition-all duration-500 ${getProgressColor(spent, limit)}`}
-                  style={{ width: `${limit > 0 ? percentage : 0}%` }}
+                  style={{ 
+                    width: `${limit > 0 ? percentage : 0}%`,
+                    backgroundColor: limit > 0 && ratio < 0.7 ? categoryColor : undefined
+                  }}
                 />
               </div>
             </div>
@@ -231,7 +239,7 @@ export default function BudgetTracker({ initialBudgets, currentMonthYear, onBudg
             <form onSubmit={handleSaveBudget} className="p-5 space-y-5">
               <div className="p-3 bg-brand-card rounded-xl border border-brand-border">
                 <h4 className="font-bold text-sm text-white">
-                  Danh mục: {CATEGORY_LABELS[editingBudget.category]}
+                  Danh mục: {editingBudget.category?.name || 'Khác'}
                 </h4>
                 <p className="text-[10px] text-brand-text-soft mt-0.5">
                   Tháng {currentMonthYear.split('-')[1]} năm {currentMonthYear.split('-')[0]}

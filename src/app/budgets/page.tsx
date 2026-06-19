@@ -1,6 +1,8 @@
 import DashboardLayout from '@/components/DashboardLayout';
 import BudgetTracker from '@/components/BudgetTracker';
+import CategoryManager from '@/components/CategoryManager';
 import { getMonthlyBudgets } from '@/app/actions/budgets';
+import { getCategories } from '@/app/actions/categories';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { Suspense } from 'react';
 
@@ -38,14 +40,28 @@ export default async function BudgetsPage() {
 }
 
 async function BudgetsContent({ currentMonthYear }: { currentMonthYear: string }) {
-  const budgets = await getMonthlyBudgets(currentMonthYear);
+  const [budgets, categories] = await Promise.all([
+    getMonthlyBudgets(currentMonthYear),
+    getCategories()
+  ]);
   
   return (
-    <div className="w-full">
+    <div className="w-full space-y-10">
       <BudgetTracker 
         initialBudgets={budgets}
         currentMonthYear={currentMonthYear}
       />
+      
+      <div className="border-t border-brand-border/40 pt-8">
+        <div className="mb-6">
+          <h2 className="text-xl font-bold text-white">Quản lý danh mục</h2>
+          <p className="text-brand-text-soft text-sm mt-1">
+            Thiết lập danh sách các danh mục chi tiêu cá nhân để phân loại dòng tiền.
+          </p>
+        </div>
+        
+        <CategoryManager categories={categories} />
+      </div>
     </div>
   );
 }

@@ -1,14 +1,15 @@
 export type AccountType = 'BANK' | 'WALLET' | 'CASH';
 export type TransactionType = 'INCOME' | 'EXPENSE' | 'TRANSFER';
 export type TransactionStatus = 'SUCCESS' | 'PENDING' | 'FAILED';
-export type BudgetCategory = 
-  | 'FOOD' 
-  | 'FIXED_EXPENSES' 
-  | 'EDUCATION' 
-  | 'SHOPPING' 
-  | 'TRANSPORT' 
-  | 'INCOME_GEN' 
-  | 'OTHERS';
+
+export interface Category {
+  id: string;
+  user_id: string;
+  name: string;
+  icon: string; // Tên icon Lucide
+  color: string; // Mã màu hex
+  created_at: string;
+}
 
 export interface Account {
   id: string;
@@ -27,48 +28,28 @@ export interface Transaction {
   type: TransactionType;
   status: TransactionStatus;
   amount: number;
-  category: BudgetCategory;
+  category_id: string | null;
   description: string | null;
   to_account_id: string | null;
   created_at: string;
   
-  // Optional relations (loaded via join)
+  // Relations
   account?: Account;
   to_account?: Account;
+  category?: Category;
 }
 
 export interface Budget {
   id: string;
   user_id: string;
-  category: BudgetCategory;
+  category_id: string;
   amount_limit: number;
   amount_spent: number;
   month_year: string; // YYYY-MM
+  
+  // Relations
+  category?: Category;
 }
-
-// ==========================================
-// MAPPING HELPER CONSTANTS FOR UI/UX
-// ==========================================
-
-export const CATEGORY_LABELS: Record<BudgetCategory, string> = {
-  FOOD: 'Ăn uống',
-  FIXED_EXPENSES: 'Cố định',
-  EDUCATION: 'Giáo dục',
-  SHOPPING: 'Mua sắm',
-  TRANSPORT: 'Di chuyển',
-  INCOME_GEN: 'Thu nhập',
-  OTHERS: 'Khác',
-};
-
-export const CATEGORY_COLORS: Record<BudgetCategory, string> = {
-  FOOD: '#e5c158',          // Gold
-  FIXED_EXPENSES: '#60a5fa',  // Blue
-  EDUCATION: '#c084fc',     // Purple
-  SHOPPING: '#f472b6',      // Pink
-  TRANSPORT: '#fb923c',     // Orange
-  INCOME_GEN: '#34d399',    // Emerald Green
-  OTHERS: '#9ca3af',        // Gray
-};
 
 export const STATUS_LABELS: Record<TransactionStatus, string> = {
   SUCCESS: 'Thành công',

@@ -1,40 +1,26 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Account, BudgetCategory, TransactionType, TransactionStatus, CATEGORY_LABELS, CATEGORY_COLORS } from '@/types';
+import { Account, Category, TransactionType, TransactionStatus } from '@/types';
 import { createTransaction } from '@/app/actions/transactions';
+import { ICON_MAP } from './CategoryManager';
 import { 
   X, 
   Plus, 
-  Utensils, 
-  Home, 
-  GraduationCap, 
-  ShoppingBag, 
-  Car, 
-  TrendingUp, 
-  MoreHorizontal, 
   Loader2,
   Calendar,
   FileText,
-  Delete
+  Delete,
+  MoreHorizontal
 } from 'lucide-react';
 
 interface QuickActionModalProps {
   isOpen: boolean;
   onClose: () => void;
   accounts: Account[];
+  categories: Category[];
   onSuccess?: () => void;
 }
-
-const CATEGORY_ICONS: Record<BudgetCategory, React.ComponentType<any>> = {
-  FOOD: Utensils,
-  FIXED_EXPENSES: Home,
-  EDUCATION: GraduationCap,
-  SHOPPING: ShoppingBag,
-  TRANSPORT: Car,
-  INCOME_GEN: TrendingUp,
-  OTHERS: MoreHorizontal,
-};
 
 // Hàm định dạng số có dấu chấm phân cách hàng nghìn
 const formatNumberString = (val: string) => {
@@ -43,12 +29,12 @@ const formatNumberString = (val: string) => {
   return new Intl.NumberFormat('vi-VN').format(Number(clean));
 };
 
-export default function QuickActionModal({ isOpen, onClose, accounts, onSuccess }: QuickActionModalProps) {
+export default function QuickActionModal({ isOpen, onClose, accounts, categories, onSuccess }: QuickActionModalProps) {
   const [type, setType] = useState<TransactionType>('EXPENSE');
   const [amount, setAmount] = useState<string>(''); // Lưu trữ chuỗi đã được định dạng (vd: 100.000)
   const [accountId, setAccountId] = useState<string>('');
   const [toAccountId, setToAccountId] = useState<string>('');
-  const [category, setCategory] = useState<BudgetCategory>('FOOD');
+  const [categoryId, setCategoryId] = useState<string>('');
   const [description, setDescription] = useState<string>('');
   const [status, setStatus] = useState<TransactionStatus>('SUCCESS');
   const [createdAt, setCreatedAt] = useState<string>('');
@@ -71,7 +57,6 @@ export default function QuickActionModal({ isOpen, onClose, accounts, onSuccess 
       setCreatedAt(localISOTime);
 
       setType('EXPENSE');
-      setCategory('FOOD');
 
       if (accounts.length > 0) {
         const sorted = [...accounts].sort((a, b) => Number(b.current_balance) - Number(a.current_balance));
@@ -81,24 +66,34 @@ export default function QuickActionModal({ isOpen, onClose, accounts, onSuccess 
         setToAccountId(otherAcc.id);
       }
 
+      if (categories.length > 0) {
+        const foodCat = categories.find(c => c.name === 'Ăn uống') || categories[0];
+        setCategoryId(foodCat.id);
+      }
+
       const timer = setTimeout(() => {
         amountInputRef.current?.focus();
       }, 150);
 
       return () => clearTimeout(timer);
     }
-  }, [isOpen, accounts]);
+  }, [isOpen, accounts, categories]);
 
   // Adjust category automatically when transaction type changes
   useEffect(() => {
+    if (categories.length === 0) return;
+
     if (type === 'INCOME') {
-      setCategory('INCOME_GEN');
+      const incomeCat = categories.find(c => c.name.includes('Thu nhập') || c.name.includes('Khác')) || categories[0];
+      setCategoryId(incomeCat.id);
     } else if (type === 'TRANSFER') {
-      setCategory('OTHERS');
+      const otherCat = categories.find(c => c.name === 'Khác') || categories[0];
+      setCategoryId(otherCat.id);
     } else {
-      setCategory('FOOD');
+      const foodCat = categories.find(c => c.name === 'Ăn uống') || categories[0];
+      setCategoryId(foodCat.id);
     }
-  }, [type]);
+  }, [type, categories]);
 
   if (!isOpen) return null;
 
@@ -158,7 +153,7 @@ export default function QuickActionModal({ isOpen, onClose, accounts, onSuccess 
         type,
         status,
         amount: numAmount,
-        category,
+        category_id: type === 'EXPENSE' ? categoryId : null,
         description,
         to_account_id: type === 'TRANSFER' ? toAccountId : undefined,
         created_at: createdAt ? new Date(createdAt).toISOString() : undefined,
@@ -348,29 +343,32 @@ export default function QuickActionModal({ isOpen, onClose, accounts, onSuccess 
                 Danh mục chi tiêu
               </label>
               <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                {(Object.keys(CATEGORY_LABELS) as BudgetCategory[])
-                  .filter(cat => cat !== 'INCOME_GEN')
-                  .map((cat) => {
-                    const Icon = CATEGORY_ICONS[cat] || MoreHorizontal;
-                    const isSelected = category === cat;
-                    return (
-                      <button
-                        key={cat}
-                        type="button"
-                        onClick={() => setCategory(cat)}
-                        className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all duration-200 cursor-pointer ${
-                          isSelected
-                            ? 'border-brand-gold bg-brand-gold/10 text-brand-gold'
-                            : 'border-brand-border bg-[#12141c] text-brand-text-soft hover:text-white hover:border-brand-border/80'
-                        }`}
-                      >
-                        <Icon className="w-5 h-5 mb-1.5" />
-                        <span className="text-[10px] font-semibold text-center leading-tight">
-                          {CATEGORY_LABELS[cat]}
-                        </span>
-                      </button>
-                    );
-                  })}
+                {categories.map((cat) => {
+                  const Icon = ICON_MAP[cat.icon] || MoreHorizontal;
+                  const isSelected = categoryId === cat.id;
+                  return (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => setCategoryId(cat.id)}
+                      className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all duration-200 cursor-pointer ${
+                        isSelected
+                          ? 'border-brand-gold bg-brand-gold/10 text-brand-gold'
+                          : 'border-brand-border bg-[#12141c] text-brand-text-soft hover:text-white hover:border-brand-border/80'
+                      }`}
+                      style={{ 
+                        color: isSelected ? cat.color : undefined,
+                        borderColor: isSelected ? cat.color : undefined,
+                        backgroundColor: isSelected ? `${cat.color}15` : undefined
+                      }}
+                    >
+                      <Icon className="w-5 h-5 mb-1.5" />
+                      <span className="text-[10px] font-semibold text-center leading-tight">
+                        {cat.name}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Account, Transaction, Budget } from '@/types';
+import { Account, Transaction, Budget, Category } from '@/types';
 import { updateInitialBalance } from '@/app/actions/accounts';
 import { MonthAnalytics } from '@/app/actions/budgets';
 import { useRouter } from 'next/navigation';
@@ -30,6 +30,7 @@ interface DashboardOverviewProps {
   initialBudgets: Budget[];
   currentMonthYear: string;
   analyticsData: MonthAnalytics[];
+  categories: Category[];
 }
 
 const WALLET_THEMES: Record<string, { gradient: string; text: string; border: string; glow: string }> = {
@@ -90,7 +91,8 @@ export default function DashboardOverview({
   initialTransactions,
   initialBudgets,
   currentMonthYear,
-  analyticsData
+  analyticsData,
+  categories
 }: DashboardOverviewProps) {
   const [accounts, setAccounts] = useState<Account[]>(initialAccounts);
   const [transactions, setTransactions] = useState<Transaction[]>(initialTransactions);
@@ -473,6 +475,7 @@ export default function DashboardOverview({
         isOpen={isQuickActionOpen}
         onClose={() => setIsQuickActionOpen(false)}
         accounts={accounts}
+        categories={categories}
         onSuccess={handleTransactionSuccess}
       />
     </div>

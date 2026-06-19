@@ -1,37 +1,20 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Transaction, BudgetCategory, CATEGORY_LABELS, CATEGORY_COLORS } from '@/types';
+import { Transaction } from '@/types';
 import { deleteTransaction } from '@/app/actions/transactions';
+import { ICON_MAP } from './CategoryManager';
 import { 
-  Utensils, 
-  Home, 
-  GraduationCap, 
-  ShoppingBag, 
-  Car, 
-  TrendingUp, 
   MoreHorizontal, 
   Trash2, 
   Loader2,
   ArrowLeftRight,
-  ArrowUpRight,
-  ArrowDownLeft
 } from 'lucide-react';
 
 interface RecentTransactionsProps {
   initialTransactions: Transaction[];
   onTransactionDeleted?: () => void;
 }
-
-const CATEGORY_ICONS: Record<BudgetCategory, React.ComponentType<any>> = {
-  FOOD: Utensils,
-  FIXED_EXPENSES: Home,
-  EDUCATION: GraduationCap,
-  SHOPPING: ShoppingBag,
-  TRANSPORT: Car,
-  INCOME_GEN: TrendingUp,
-  OTHERS: MoreHorizontal,
-};
 
 const formatVietnameseDateTime = (dateStr: string) => {
   const date = new Date(dateStr);
@@ -130,8 +113,10 @@ export default function RecentTransactions({ initialTransactions, onTransactionD
             </thead>
             <tbody className="divide-y divide-brand-border/40">
               {transactions.map((tx) => {
-                const Icon = CATEGORY_ICONS[tx.category] || MoreHorizontal;
-                const categoryColor = CATEGORY_COLORS[tx.category] || '#ffffff';
+                const category = tx.category;
+                const Icon = ICON_MAP[category?.icon || ''] || MoreHorizontal;
+                const categoryColor = category?.color || '#9ca3af';
+                const categoryName = category?.name || (tx.type === 'INCOME' ? 'Thu nhập' : 'Khác');
                 const isIncome = tx.type === 'INCOME';
                 const isTransfer = tx.type === 'TRANSFER';
 
@@ -141,14 +126,18 @@ export default function RecentTransactions({ initialTransactions, onTransactionD
                     <td className="py-4 pl-2">
                       <div className="flex items-center gap-3">
                         <div 
-                          className="w-9 h-9 rounded-xl flex items-center justify-center border border-brand-border bg-[#12141c]"
-                          style={{ color: categoryColor }}
+                          className="w-9 h-9 rounded-xl flex items-center justify-center border bg-[#12141c]"
+                          style={{ 
+                            color: categoryColor,
+                            borderColor: `${categoryColor}30`,
+                            backgroundColor: `${categoryColor}08`
+                          }}
                         >
                           <Icon className="w-4.5 h-4.5" />
                         </div>
                         <div>
                           <p className="text-sm font-bold text-white">
-                            {CATEGORY_LABELS[tx.category]}
+                            {categoryName}
                           </p>
                           <p className="text-[11px] text-brand-text-soft/80 mt-0.5 truncate max-w-[200px]">
                             {tx.description || (isTransfer ? `Chuyển sang ${tx.to_account?.name || 'Tài khoản khác'}` : 'Không có ghi chú')}

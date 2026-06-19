@@ -1,7 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
-import { Transaction, TransactionType, TransactionStatus, BudgetCategory } from '@/types';
+import { Transaction, TransactionType, TransactionStatus } from '@/types';
 import { revalidatePath } from 'next/cache';
 
 interface CreateTransactionInput {
@@ -9,7 +9,7 @@ interface CreateTransactionInput {
   type: TransactionType;
   status: TransactionStatus;
   amount: number;
-  category: BudgetCategory;
+  category_id?: string | null;
   description?: string;
   to_account_id?: string;
   created_at?: string; // Cho phép điền ngày giờ giao dịch thủ công
@@ -33,7 +33,7 @@ export async function createTransaction(input: CreateTransactionInput): Promise<
     type: input.type,
     status: input.status,
     amount: input.amount,
-    category: input.category,
+    category_id: input.category_id || null,
     description: input.description || null,
     to_account_id: input.type === 'TRANSFER' ? (input.to_account_id || null) : null,
     created_at: input.created_at ? new Date(input.created_at).toISOString() : new Date().toISOString(),
@@ -42,7 +42,7 @@ export async function createTransaction(input: CreateTransactionInput): Promise<
   const { data, error } = await supabase
     .from('transactions')
     .insert([insertData])
-    .select('*, account:accounts!account_id(id, name, type), to_account:accounts!to_account_id(id, name, type)')
+    .select('*, account:accounts!account_id(id, name, type), to_account:accounts!to_account_id(id, name, type), category:categories!category_id(id, name, icon, color)')
     .single();
 
   if (error) {
@@ -78,7 +78,7 @@ export async function updateTransaction(
   if (input.type !== undefined) updateData.type = input.type;
   if (input.status !== undefined) updateData.status = input.status;
   if (input.amount !== undefined) updateData.amount = input.amount;
-  if (input.category !== undefined) updateData.category = input.category;
+  if (input.category_id !== undefined) updateData.category_id = input.category_id;
   if (input.description !== undefined) updateData.description = input.description || null;
   if (input.to_account_id !== undefined) {
     updateData.to_account_id = input.type === 'TRANSFER' ? (input.to_account_id || null) : null;
@@ -91,7 +91,7 @@ export async function updateTransaction(
     .from('transactions')
     .update(updateData)
     .eq('id', id)
-    .select('*, account:accounts!account_id(id, name, type), to_account:accounts!to_account_id(id, name, type)')
+    .select('*, account:accounts!account_id(id, name, type), to_account:accounts!to_account_id(id, name, type), category:categories!category_id(id, name, icon, color)')
     .single();
 
   if (error) {
@@ -146,7 +146,7 @@ export async function getRecentTransactions(limit: number = 5): Promise<Transact
 
   const { data, error } = await supabase
     .from('transactions')
-    .select('*, account:accounts!account_id(id, name, type), to_account:accounts!to_account_id(id, name, type)')
+    .select('*, account:accounts!account_id(id, name, type), to_account:accounts!to_account_id(id, name, type), category:categories!category_id(id, name, icon, color)')
     .order('created_at', { ascending: false })
     .limit(limit);
 

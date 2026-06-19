@@ -1,21 +1,13 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
-import { Budget, BudgetCategory, BudgetCategory as TypeCategory } from '@/types';
+import { Budget } from '@/types';
 import { revalidatePath } from 'next/cache';
-
-const EXPENSE_CATEGORIES: BudgetCategory[] = [
-  'FOOD',
-  'FIXED_EXPENSES',
-  'EDUCATION',
-  'SHOPPING',
-  'TRANSPORT',
-  'OTHERS',
-];
+import { getCategories } from './categories';
 
 /**
  * Lấy toàn bộ hạn mức (Budgets) của một tháng (Định dạng "YYYY-MM").
- * Bảo đảm luôn trả về đủ 6 danh mục chi tiêu chính (tự động điền hạn mức = 0 nếu chưa tồn tại).
+ * Đảm bảo luôn trả về đủ các danh mục chi tiêu của người dùng (tự động điền hạn mức = 0 nếu chưa tồn tại).
  */
 export async function getMonthlyBudgets(monthYear: string): Promise<Budget[]> {
   const supabase = await createClient();
@@ -25,7 +17,11 @@ export async function getMonthlyBudgets(monthYear: string): Promise<Budget[]> {
     throw new Error('Người dùng chưa đăng nhập.');
   }
 
-  const { data, error } = await supabase
+  // 1. Lấy tất cả danh mục của user
+  const categories = await getCategories();
+
+  // 2. Lấy dữ liệu ngân sách đã lưu trong tháng
+  const { data: budgetsData, error } = await supabase
     .from('budgets')
     .select('*')
     .eq('month_year', monthYear);
@@ -34,25 +30,30 @@ export async function getMonthlyBudgets(monthYear: string): Promise<Budget[]> {
     throw new Error(`Lỗi lấy dữ liệu ngân sách: ${error.message}`);
   }
 
-  // Chuyển kết quả thành Map để tra cứu nhanh
-  const budgetMap = new Map<string, Budget>();
-  if (data) {
-    data.forEach((b: Budget) => budgetMap.set(b.category, b));
+  // Chuyển kết quả thành Map để tra cứu nhanh bằng category_id
+  const budgetMap = new Map<string, any>();
+  if (budgetsData) {
+    budgetsData.forEach((b) => budgetMap.set(b.category_id, b));
   }
 
-  // Đảm bảo đủ các danh mục chi tiêu
-  const result: Budget[] = EXPENSE_CATEGORIES.map((cat) => {
-    const existing = budgetMap.get(cat);
+  // Ghép nối danh mục và hạn mức ngân sách
+  const result: Budget[] = categories.map((cat) => {
+    const existing = budgetMap.get(cat.id);
     if (existing) {
-      return existing;
+      return {
+        ...existing,
+        category: cat,
+      };
     }
+    // Trả về ngân sách rỗng giả định nếu chưa được khởi tạo trong DB
     return {
-      id: `temp-${cat}`,
+      id: `temp-${cat.id}`,
       user_id: user.id,
-      category: cat,
+      category_id: cat.id,
       amount_limit: 0,
       amount_spent: 0,
       month_year: monthYear,
+      category: cat,
     };
   });
 
@@ -63,7 +64,7 @@ export async function getMonthlyBudgets(monthYear: string): Promise<Budget[]> {
  * Thiết lập hoặc cập nhật hạn mức ngân sách cho một danh mục.
  */
 export async function updateBudgetLimit(
-  category: BudgetCategory,
+  categoryId: string,
   monthYear: string,
   newLimit: number
 ): Promise<Budget> {
@@ -80,13 +81,13 @@ export async function updateBudgetLimit(
     .upsert(
       {
         user_id: user.id,
-        category,
+        category_id: categoryId,
         amount_limit: newLimit,
         month_year: monthYear,
       },
-      { onConflict: 'user_id,category,month_year' }
+      { onConflict: 'user_id,category_id,month_year' }
     )
-    .select()
+    .select('*, category:categories!category_id(id, name, icon, color)')
     .single();
 
   if (error) {
@@ -96,7 +97,7 @@ export async function updateBudgetLimit(
   revalidatePath('/');
   revalidatePath('/budgets');
 
-  return data as Budget;
+  return data as unknown as Budget;
 }
 
 /**
