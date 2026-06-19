@@ -3,6 +3,8 @@ import DashboardOverview from '@/components/DashboardOverview';
 import { getAccounts } from '@/app/actions/accounts';
 import { getRecentTransactions } from '@/app/actions/transactions';
 import { getMonthlyBudgets, getAnalyticsData } from '@/app/actions/budgets';
+import LoadingSpinner from '@/components/LoadingSpinner';
+import { Suspense } from 'react';
 import { AlertCircle } from 'lucide-react';
 
 export const metadata = {
@@ -12,7 +14,17 @@ export const metadata = {
 
 export const dynamic = 'force-dynamic';
 
-export default async function HomePage() {
+export default function HomePage() {
+  return (
+    <DashboardLayout>
+      <Suspense fallback={<LoadingSpinner message="Đang đồng bộ tổng quan tài chính..." />}>
+        <DashboardContent />
+      </Suspense>
+    </DashboardLayout>
+  );
+}
+
+async function DashboardContent() {
   try {
     // 1. Tính toán tháng hiện tại theo định dạng YYYY-MM
     const now = new Date();
@@ -27,28 +39,26 @@ export default async function HomePage() {
     ]);
 
     return (
-      <DashboardLayout>
-        <DashboardOverview 
-          initialAccounts={accounts} 
-          initialTransactions={recentTransactions} 
-          initialBudgets={monthlyBudgets}
-          currentMonthYear={currentMonthYear}
-          analyticsData={analyticsData}
-        />
-      </DashboardLayout>
+      <DashboardOverview 
+        initialAccounts={accounts} 
+        initialTransactions={recentTransactions} 
+        initialBudgets={monthlyBudgets}
+        currentMonthYear={currentMonthYear}
+        analyticsData={analyticsData}
+      />
     );
   } catch (error) {
     console.error('Lỗi tải dữ liệu trang chủ:', error);
     
     return (
-      <div className="min-h-screen bg-brand-charcoal text-white flex items-center justify-center p-6">
+      <div className="flex-1 flex items-center justify-center p-6 min-h-[60vh]">
         <div className="w-full max-w-md glass-panel border-neon-rose/30 p-6 rounded-2xl text-center space-y-4">
           <div className="w-12 h-12 rounded-full bg-neon-rose/10 flex items-center justify-center mx-auto text-neon-rose border border-neon-rose/20">
             <AlertCircle className="w-6 h-6" />
           </div>
           <h1 className="text-xl font-bold text-white">Lỗi tải dữ liệu</h1>
           <p className="text-brand-text-soft text-sm">
-            {error instanceof Error ? error.message : 'Không thể kết nối đến cơ sở dữ liệu Supabase. Vui lòng kiểm tra lại cấu hình .env.local.'}
+            {error instanceof Error ? error.message : 'Không thể kết nối đến cơ sở dữ liệu Supabase. Vui lòng kiểm tra lại cấu hình Vercel.'}
           </p>
           <div className="pt-2">
             <a

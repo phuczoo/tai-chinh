@@ -1,6 +1,8 @@
 import DashboardLayout from '@/components/DashboardLayout';
 import BudgetTracker from '@/components/BudgetTracker';
 import { getMonthlyBudgets } from '@/app/actions/budgets';
+import LoadingSpinner from '@/components/LoadingSpinner';
+import { Suspense } from 'react';
 
 export const metadata = {
   title: 'Hạn mức ngân sách | Antigravity Finance',
@@ -9,10 +11,9 @@ export const metadata = {
 
 export const dynamic = 'force-dynamic';
 
-export default async function BudgetsPage() {
+export default function BudgetsPage() {
   const now = new Date();
   const currentMonthYear = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  const budgets = await getMonthlyBudgets(currentMonthYear);
 
   return (
     <DashboardLayout>
@@ -24,13 +25,23 @@ export default async function BudgetsPage() {
           </p>
         </div>
         
-        <div className="w-full">
-          <BudgetTracker 
-            initialBudgets={budgets}
-            currentMonthYear={currentMonthYear}
-          />
-        </div>
+        <Suspense fallback={<LoadingSpinner message="Đang tải dữ liệu ngân sách..." />}>
+          <BudgetsContent currentMonthYear={currentMonthYear} />
+        </Suspense>
       </div>
     </DashboardLayout>
+  );
+}
+
+async function BudgetsContent({ currentMonthYear }: { currentMonthYear: string }) {
+  const budgets = await getMonthlyBudgets(currentMonthYear);
+  
+  return (
+    <div className="w-full">
+      <BudgetTracker 
+        initialBudgets={budgets}
+        currentMonthYear={currentMonthYear}
+      />
+    </div>
   );
 }

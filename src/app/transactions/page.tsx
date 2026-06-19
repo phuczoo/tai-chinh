@@ -1,6 +1,8 @@
 import DashboardLayout from '@/components/DashboardLayout';
 import RecentTransactions from '@/components/RecentTransactions';
 import { getRecentTransactions } from '@/app/actions/transactions';
+import LoadingSpinner from '@/components/LoadingSpinner';
+import { Suspense } from 'react';
 
 export const metadata = {
   title: 'Lịch sử giao dịch | Antigravity Finance',
@@ -9,10 +11,7 @@ export const metadata = {
 
 export const dynamic = 'force-dynamic';
 
-export default async function TransactionsPage() {
-  // Lấy danh sách giao dịch nhiều hơn (tối đa 100 giao dịch gần nhất)
-  const transactions = await getRecentTransactions(100);
-
+export default function TransactionsPage() {
   return (
     <DashboardLayout>
       <div className="p-6 max-w-7xl mx-auto w-full space-y-6">
@@ -23,10 +22,15 @@ export default async function TransactionsPage() {
           </p>
         </div>
         
-        <RecentTransactions 
-          initialTransactions={transactions}
-        />
+        <Suspense fallback={<LoadingSpinner message="Đang tải lịch sử giao dịch..." />}>
+          <TransactionsContent />
+        </Suspense>
       </div>
     </DashboardLayout>
   );
+}
+
+async function TransactionsContent() {
+  const transactions = await getRecentTransactions(100);
+  return <RecentTransactions initialTransactions={transactions} />;
 }
