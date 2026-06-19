@@ -15,10 +15,8 @@ import {
   MoreHorizontal, 
   Loader2,
   Calendar,
-  CheckCircle,
-  Clock,
-  XCircle,
-  FileText
+  FileText,
+  Delete
 } from 'lucide-react';
 
 interface QuickActionModalProps {
@@ -38,9 +36,16 @@ const CATEGORY_ICONS: Record<BudgetCategory, React.ComponentType<any>> = {
   OTHERS: MoreHorizontal,
 };
 
+// Hàm định dạng số có dấu chấm phân cách hàng nghìn
+const formatNumberString = (val: string) => {
+  const clean = val.replace(/\D/g, '');
+  if (!clean) return '';
+  return new Intl.NumberFormat('vi-VN').format(Number(clean));
+};
+
 export default function QuickActionModal({ isOpen, onClose, accounts, onSuccess }: QuickActionModalProps) {
   const [type, setType] = useState<TransactionType>('EXPENSE');
-  const [amount, setAmount] = useState<string>('');
+  const [amount, setAmount] = useState<string>(''); // Lưu trữ chuỗi đã được định dạng (vd: 100.000)
   const [accountId, setAccountId] = useState<string>('');
   const [toAccountId, setToAccountId] = useState<string>('');
   const [category, setCategory] = useState<BudgetCategory>('FOOD');
@@ -60,27 +65,22 @@ export default function QuickActionModal({ isOpen, onClose, accounts, onSuccess 
       setDescription('');
       setStatus('SUCCESS');
       
-      // Format current local date-time for datetime-local input (YYYY-MM-DDThh:mm)
       const now = new Date();
       const offset = now.getTimezoneOffset() * 60000;
       const localISOTime = (new Date(now.getTime() - offset)).toISOString().slice(0, 16);
       setCreatedAt(localISOTime);
 
-      // Default type is EXPENSE, category is FOOD
       setType('EXPENSE');
       setCategory('FOOD');
 
-      // Set source account to the one with the highest current balance
       if (accounts.length > 0) {
         const sorted = [...accounts].sort((a, b) => Number(b.current_balance) - Number(a.current_balance));
         setAccountId(sorted[0].id);
         
-        // Find a different default target account for transfers
         const otherAcc = accounts.find(a => a.id !== sorted[0].id) || accounts[0];
         setToAccountId(otherAcc.id);
       }
 
-      // Auto focus on amount field (with 100ms delay to allow modal slide-in animation)
       const timer = setTimeout(() => {
         amountInputRef.current?.focus();
       }, 150);
@@ -102,12 +102,35 @@ export default function QuickActionModal({ isOpen, onClose, accounts, onSuccess 
 
   if (!isOpen) return null;
 
+  // Lấy giá trị số nguyên từ chuỗi đã định dạng
+  const getRawAmount = () => {
+    return Number(amount.replace(/\./g, '')) || 0;
+  };
+
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value.replace(/\D/g, '');
+    setAmount(formatNumberString(raw));
+  };
+
+  const handleQuickAdd = (valueToAdd: number) => {
+    const currentVal = getRawAmount();
+    const newVal = currentVal + valueToAdd;
+    setAmount(formatNumberString(String(newVal)));
+  };
+
+  const handleAppendZeros = () => {
+    const raw = amount.replace(/\./g, '');
+    if (!raw) return;
+    const newVal = raw + '000';
+    setAmount(formatNumberString(newVal));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
-    const numAmount = Number(amount);
-    if (isNaN(numAmount) || numAmount <= 0) {
+    const numAmount = getRawAmount();
+    if (numAmount <= 0) {
       setError('Vui lòng nhập số tiền lớn hơn 0.');
       return;
     }
@@ -196,27 +219,78 @@ export default function QuickActionModal({ isOpen, onClose, accounts, onSuccess 
             ))}
           </div>
 
-          {/* B. Amount Input (Auto-focused) */}
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-brand-text-soft uppercase tracking-wider block" htmlFor="quickAmountInput">
-              Số tiền (VND)
-            </label>
+          {/* B. Amount Input with dots formatting */}
+          <div className="space-y-2">
+            <div className="flex justify-between items-baseline">
+              <label className="text-xs font-semibold text-brand-text-soft uppercase tracking-wider block" htmlFor="quickAmountInput">
+                Số tiền (VND)
+              </label>
+              {amount && (
+                <button
+                  type="button"
+                  onClick={() => setAmount('')}
+                  className="text-[10px] font-bold text-neon-rose hover:underline flex items-center gap-1 cursor-pointer"
+                >
+                  <Delete className="w-3.5 h-3.5" />
+                  Xóa số
+                </button>
+              )}
+            </div>
             <div className="relative">
               <span className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none text-xl font-bold text-brand-gold">
                 ₫
               </span>
               <input
                 ref={amountInputRef}
-                type="number"
+                type="text"
+                inputMode="numeric"
                 id="quickAmountInput"
                 value={amount}
-                onChange={(e) => setAmount(e.target.value)}
+                onChange={handleAmountChange}
                 placeholder="0"
                 className="w-full bg-[#12141c] border border-brand-border focus:border-brand-gold focus:ring-1 focus:ring-brand-gold text-white text-2xl font-black rounded-xl pl-10 pr-4 py-3 outline-none transition"
                 required
-                min="1"
-                step="any"
               />
+            </div>
+
+            {/* Quick Suggest Buttons */}
+            <div className="flex flex-wrap gap-1.5 pt-1">
+              <button
+                type="button"
+                onClick={handleAppendZeros}
+                disabled={!amount}
+                className="px-3 py-1.5 text-xs font-bold bg-brand-border/30 hover:bg-brand-border/60 text-white rounded-lg border border-brand-border/25 cursor-pointer disabled:opacity-40"
+              >
+                .000
+              </button>
+              <button
+                type="button"
+                onClick={() => handleQuickAdd(50000)}
+                className="px-3 py-1.5 text-xs font-bold bg-[#1e2330] hover:bg-[#2c3245] text-brand-gold rounded-lg border border-brand-gold/15 cursor-pointer"
+              >
+                +50k
+              </button>
+              <button
+                type="button"
+                onClick={() => handleQuickAdd(100000)}
+                className="px-3 py-1.5 text-xs font-bold bg-[#1e2330] hover:bg-[#2c3245] text-brand-gold rounded-lg border border-brand-gold/15 cursor-pointer"
+              >
+                +100k
+              </button>
+              <button
+                type="button"
+                onClick={() => handleQuickAdd(500000)}
+                className="px-3 py-1.5 text-xs font-bold bg-[#1e2330] hover:bg-[#2c3245] text-brand-gold rounded-lg border border-brand-gold/15 cursor-pointer"
+              >
+                +500k
+              </button>
+              <button
+                type="button"
+                onClick={() => handleQuickAdd(1000000)}
+                className="px-3 py-1.5 text-xs font-bold bg-[#1e2330] hover:bg-[#2c3245] text-brand-gold rounded-lg border border-brand-gold/15 cursor-pointer"
+              >
+                +1M
+              </button>
             </div>
           </div>
 
@@ -267,7 +341,7 @@ export default function QuickActionModal({ isOpen, onClose, accounts, onSuccess 
             )}
           </div>
 
-          {/* D. Categories Grid (EXPENSE ONLY - INCOME and TRANSFER auto-assign) */}
+          {/* D. Categories Grid (EXPENSE ONLY) */}
           {type === 'EXPENSE' && (
             <div className="space-y-2">
               <label className="text-xs font-semibold text-brand-text-soft uppercase tracking-wider block">
@@ -275,7 +349,7 @@ export default function QuickActionModal({ isOpen, onClose, accounts, onSuccess 
               </label>
               <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                 {(Object.keys(CATEGORY_LABELS) as BudgetCategory[])
-                  .filter(cat => cat !== 'INCOME_GEN') // Ẩn danh mục thu nhập khi chi tiêu
+                  .filter(cat => cat !== 'INCOME_GEN')
                   .map((cat) => {
                     const Icon = CATEGORY_ICONS[cat] || MoreHorizontal;
                     const isSelected = category === cat;
@@ -301,7 +375,7 @@ export default function QuickActionModal({ isOpen, onClose, accounts, onSuccess 
             </div>
           )}
 
-          {/* E. Additional Fields (Description, Status, Date) */}
+          {/* E. Additional Fields */}
           <div className="pt-2 border-t border-brand-border/40 space-y-4">
             {/* Description */}
             <div className="space-y-1">
@@ -387,16 +461,16 @@ export default function QuickActionModal({ isOpen, onClose, accounts, onSuccess 
         {/* Modal Footer */}
         <div className="p-5 border-t border-brand-border shrink-0 bg-[#141722]/50 flex gap-3 justify-end">
           <button
-            type="button"
             onClick={onClose}
+            type="button"
             className="px-5 py-3 rounded-xl border border-brand-border hover:bg-brand-card text-brand-text-soft text-sm font-medium transition cursor-pointer"
           >
             Hủy
           </button>
           <button
-            type="submit"
             onClick={handleSubmit}
             disabled={isSaving}
+            type="submit"
             className="bg-brand-gold hover:bg-brand-gold-hover text-brand-charcoal font-bold text-sm rounded-xl px-6 py-3 flex items-center justify-center gap-2 transition cursor-pointer disabled:opacity-50 min-w-[120px]"
           >
             {isSaving ? (
