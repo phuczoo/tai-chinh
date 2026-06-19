@@ -1,26 +1,64 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+@theme {
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  
+  --color-background: #12141c;
+  --color-foreground: #ffffff;
+  
+  --color-brand-charcoal: #12141c;
+  --color-brand-card: #1a1d29;
+  --color-brand-card-hover: #222635;
+  --color-brand-border: #2e3347;
+  --color-brand-text-soft: #8a94a6;
+  --color-brand-gold: #e5c158;
+  --color-brand-gold-hover: #d4b047;
+  
+  --color-neon-emerald: #10b981;
+  --color-neon-amber: #f59e0b;
+  --color-neon-rose: #f43f5e;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--color-brand-charcoal);
+  color: var(--color-foreground);
+  font-family: var(--font-sans);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Glassmorphism utility */
+.glass-panel {
+  background: rgba(26, 29, 41, 0.65);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(46, 51, 71, 0.5);
+}
+
+/* Fallback for devices that don't support backdrop-filter */
+@supports not (backdrop-filter: blur(12px)) {
+  .glass-panel {
+    background: rgba(26, 29, 41, 0.95);
+    border: 1px solid rgba(46, 51, 71, 0.8);
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #12141c;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #2e3347;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #e5c158;
 }

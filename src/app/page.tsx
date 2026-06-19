@@ -1,65 +1,65 @@
-import Image from "next/image";
+import DashboardLayout from '@/components/DashboardLayout';
+import DashboardOverview from '@/components/DashboardOverview';
+import { getAccounts } from '@/app/actions/accounts';
+import { getRecentTransactions } from '@/app/actions/transactions';
+import { getMonthlyBudgets, getAnalyticsData } from '@/app/actions/budgets';
+import { AlertCircle } from 'lucide-react';
 
-export default function Home() {
-  return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+export const metadata = {
+  title: 'Dashboard | Antigravity Finance',
+  description: 'Tổng quan tài sản và nguồn tiền cá nhân của bạn.',
+};
+
+export const dynamic = 'force-dynamic';
+
+export default async function HomePage() {
+  try {
+    // 1. Tính toán tháng hiện tại theo định dạng YYYY-MM
+    const now = new Date();
+    const currentMonthYear = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+    // 2. Chạy đồng thời 4 truy vấn song song để tối ưu hóa hiệu năng
+    const [accounts, recentTransactions, monthlyBudgets, analyticsData] = await Promise.all([
+      getAccounts(),
+      getRecentTransactions(8),
+      getMonthlyBudgets(currentMonthYear),
+      getAnalyticsData()
+    ]);
+
+    return (
+      <DashboardLayout>
+        <DashboardOverview 
+          initialAccounts={accounts} 
+          initialTransactions={recentTransactions} 
+          initialBudgets={monthlyBudgets}
+          currentMonthYear={currentMonthYear}
+          analyticsData={analyticsData}
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+      </DashboardLayout>
+    );
+  } catch (error) {
+    console.error('Lỗi tải dữ liệu trang chủ:', error);
+    
+    return (
+      <div className="min-h-screen bg-brand-charcoal text-white flex items-center justify-center p-6">
+        <div className="w-full max-w-md glass-panel border-neon-rose/30 p-6 rounded-2xl text-center space-y-4">
+          <div className="w-12 h-12 rounded-full bg-neon-rose/10 flex items-center justify-center mx-auto text-neon-rose border border-neon-rose/20">
+            <AlertCircle className="w-6 h-6" />
+          </div>
+          <h1 className="text-xl font-bold text-white">Lỗi tải dữ liệu</h1>
+          <p className="text-brand-text-soft text-sm">
+            {error instanceof Error ? error.message : 'Không thể kết nối đến cơ sở dữ liệu Supabase. Vui lòng kiểm tra lại cấu hình .env.local.'}
           </p>
+          <div className="pt-2">
+            <a
+              href="/auth"
+              className="inline-block bg-brand-gold hover:bg-brand-gold-hover text-brand-charcoal font-semibold text-sm rounded-xl px-5 py-2.5 transition"
+            >
+              Quay lại Đăng nhập
+            </a>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
-  );
+      </div>
+    );
+  }
 }
