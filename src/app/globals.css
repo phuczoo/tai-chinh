@@ -27,6 +27,7 @@ body {
   min-height: 100vh;
   overflow-x: hidden;
   position: relative;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* Subtle background radial glows matching the reference design */
@@ -41,6 +42,7 @@ body::before {
               radial-gradient(circle at 10% 200px, rgba(96, 165, 250, 0.02), transparent 40%);
   pointer-events: none;
   z-index: -1;
+  transition: background 0.3s ease;
 }
 
 /* Premium Glassmorphism utility with layered shadows and thin borders */
@@ -51,6 +53,7 @@ body::before {
   border: 1px solid rgba(255, 255, 255, 0.06);
   box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2), 
               inset 0 1px 1px rgba(255, 255, 255, 0.02);
+  transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 /* Fallback for devices that don't support backdrop-filter */
@@ -69,6 +72,7 @@ body::before {
 
 ::-webkit-scrollbar-track {
   background: #090a0f;
+  transition: background 0.3s ease;
 }
 
 ::-webkit-scrollbar-thumb {
@@ -87,4 +91,40 @@ body::before {
 .scrollbar-none {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+/* ==========================================
+    LIGHT THEME OVERRIDES
+   ========================================== */
+:root.light {
+  --color-background: #f8fafc;
+  --color-foreground: #0f172a;
+  
+  --color-brand-charcoal: #f8fafc;
+  --color-brand-card: rgba(255, 255, 255, 0.75);
+  --color-brand-card-hover: rgba(241, 245, 249, 0.95);
+  --color-brand-border: rgba(15, 23, 42, 0.08);
+  --color-brand-text-soft: #64748b;
+  --color-brand-gold: #b38f1d;
+  --color-brand-gold-hover: #967412;
+}
+
+:root.light body::before {
+  background: radial-gradient(circle at 50% -100px, rgba(179, 143, 29, 0.06), transparent 60%),
+              radial-gradient(circle at 10% 200px, rgba(59, 130, 246, 0.03), transparent 40%);
+}
+
+:root.light .glass-panel {
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.03), 
+              inset 0 1px 1px rgba(255, 255, 255, 0.5);
+}
+
+:root.light ::-webkit-scrollbar-track {
+  background: #f8fafc;
+}
+
+:root.light ::-webkit-scrollbar-thumb {
+  background: rgba(15, 23, 42, 0.1);
 }

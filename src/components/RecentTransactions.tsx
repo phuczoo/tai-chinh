@@ -13,6 +13,7 @@ import {
 
 interface RecentTransactionsProps {
   initialTransactions: Transaction[];
+  searchTerm?: string;
   onTransactionDeleted?: () => void;
 }
 
@@ -27,7 +28,7 @@ const formatVietnameseDateTime = (dateStr: string) => {
   }).format(date);
 };
 
-export default function RecentTransactions({ initialTransactions, onTransactionDeleted }: RecentTransactionsProps) {
+export default function RecentTransactions({ initialTransactions, searchTerm = '', onTransactionDeleted }: RecentTransactionsProps) {
   const [transactions, setTransactions] = useState<Transaction[]>(initialTransactions);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
@@ -85,6 +86,19 @@ export default function RecentTransactions({ initialTransactions, onTransactionD
     }
   };
 
+  // Client-side live search filtering
+  const filteredTransactions = transactions.filter(tx => {
+    if (!searchTerm.trim()) return true;
+    const query = searchTerm.toLowerCase().trim();
+    
+    const descriptionMatch = tx.description?.toLowerCase().includes(query) ?? false;
+    const categoryMatch = tx.category?.name?.toLowerCase().includes(query) ?? false;
+    const accountMatch = tx.account?.name?.toLowerCase().includes(query) ?? false;
+    const typeMatch = (tx.type === 'INCOME' ? 'thu nhập' : tx.type === 'EXPENSE' ? 'chi tiêu' : 'chuyển khoản').includes(query);
+    
+    return descriptionMatch || categoryMatch || accountMatch || typeMatch;
+  });
+
   return (
     <div className="glass-panel rounded-2xl p-6 shadow-xl space-y-6">
       <div className="flex items-center justify-between">
@@ -93,13 +107,13 @@ export default function RecentTransactions({ initialTransactions, onTransactionD
           Giao dịch gần đây
         </h2>
         <span className="text-xs text-brand-text-soft font-semibold">
-          Hiển thị {transactions.length} giao dịch mới nhất
+          {searchTerm ? `Tìm thấy ${filteredTransactions.length} kết quả` : `Hiển thị ${filteredTransactions.length} giao dịch mới nhất`}
         </span>
       </div>
 
-      {transactions.length === 0 ? (
+      {filteredTransactions.length === 0 ? (
         <div className="py-10 text-center border border-dashed border-brand-border rounded-xl">
-          <p className="text-sm text-brand-text-soft">Chưa có giao dịch nào được nhập.</p>
+          <p className="text-sm text-brand-text-soft">Chưa tìm thấy giao dịch nào phù hợp.</p>
           <p className="text-xs text-brand-text-soft/60 mt-1">Sử dụng nút nhập nhanh ở thanh điều hướng để ghi nhận chi tiêu.</p>
         </div>
       ) : (
@@ -115,7 +129,7 @@ export default function RecentTransactions({ initialTransactions, onTransactionD
               </tr>
             </thead>
             <tbody className="divide-y divide-brand-border/40">
-              {transactions.map((tx) => {
+              {filteredTransactions.map((tx) => {
                 const category = tx.category;
                 const Icon = ICON_MAP[category?.icon || ''] || MoreHorizontal;
                 const categoryColor = category?.color || '#9ca3af';

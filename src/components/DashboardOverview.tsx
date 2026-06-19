@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Account, Transaction, Budget, Category } from '@/types';
 import { updateInitialBalance } from '@/app/actions/accounts';
 import { MonthAnalytics } from '@/app/actions/budgets';
@@ -26,9 +26,9 @@ import {
   Search,
   Bell,
   Sun,
+  Moon,
   Share2,
   Download,
-  TrendingUp,
   ArrowRight
 } from 'lucide-react';
 
@@ -109,6 +109,19 @@ export default function DashboardOverview({
   const [userName, setUserName] = useState<string>('Arthur');
   const [greeting, setGreeting] = useState<string>('Good Morning');
   
+  // Interactive features states
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+  const [isNotifOpen, setIsNotifOpen] = useState<boolean>(false);
+  const notifRef = useRef<HTMLDivElement>(null);
+
+  // Mock Notifications
+  const notifications = [
+    { id: 1, text: 'Chào mừng bạn đến với Antigravity Fin! Hãy bắt đầu thiết lập hạn mức chi tiêu.', time: 'Vừa xong' },
+    { id: 2, text: 'Tài chính khỏe mạnh: Chi tiêu của bạn hiện đang rất ổn định so với tháng trước.', time: '1 giờ trước' },
+    { id: 3, text: 'Mẹo: Nhập nhanh giao dịch bằng phím bấm (+) màu vàng ở góc phải màn hình.', time: '2 giờ trước' }
+  ];
+  
   // Modal states
   const [isEditBalanceOpen, setIsEditBalanceOpen] = useState<boolean>(false);
   const [isQuickActionOpen, setIsQuickActionOpen] = useState<boolean>(false);
@@ -122,34 +135,120 @@ export default function DashboardOverview({
 
   const router = useRouter();
 
-  // Load showBalance preference and greeting on mount
+  // Load preferences and setup listeners
   useEffect(() => {
+    // Show balance preference
     const saved = localStorage.getItem('dashboard_show_balance');
     if (saved !== null) {
       setShowBalance(saved === 'true');
     }
 
+    // App Theme preference
+    const savedTheme = localStorage.getItem('app_theme') as 'dark' | 'light' | null;
+    if (savedTheme) {
+      setTheme(savedTheme);
+      document.documentElement.classList.toggle('light', savedTheme === 'light');
+    }
+
+    // Greeting logic
     const hour = new Date().getHours();
     if (hour >= 5 && hour < 12) setGreeting('Good Morning');
     else if (hour >= 12 && hour < 17) setGreeting('Good Afternoon');
     else setGreeting('Good Evening');
 
+    // Fetch user profile name
     const fetchUser = async () => {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         const name = user.user_metadata?.full_name ?? user.email?.split('@')[0] ?? 'Arthur';
-        // Capitalize first letter
         setUserName(name.charAt(0).toUpperCase() + name.slice(1));
       }
     };
     fetchUser();
+
+    // Close popover when click outside
+    const handleClickOutside = (event: MouseEvent) => {
+      if (notifRef.current && !notifRef.current.contains(event.target as Node)) {
+        setIsNotifOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const toggleBalance = () => {
     const newValue = !showBalance;
     setShowBalance(newValue);
     localStorage.setItem('dashboard_show_balance', String(newValue));
+  };
+
+  const handleThemeToggle = () => {
+    const nextTheme = theme === 'dark' ? 'light' : 'dark';
+    setTheme(nextTheme);
+    document.documentElement.classList.toggle('light', nextTheme === 'light');
+    localStorage.setItem('app_theme', nextTheme);
+    setToastMessage(`Đã chuyển sang giao diện ${nextTheme === 'light' ? 'Sáng' : 'Tối'}.`);
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  const handleExportCSV = () => {
+    if (transactions.length === 0) {
+      setToastMessage('Không có dữ liệu giao dịch để xuất.');
+      setTimeout(() => setToastMessage(null), 3000);
+      return;
+    }
+
+    // Headers
+    const headers = ['Ngay', 'Tai Khoan', 'Loai Giao Dich', 'So Tien (VND)', 'Danh Muc', 'Ghi Chu', 'Trang Thai'];
+    
+    // Rows
+    const rows = transactions.map(tx => [
+      new Date(tx.created_at).toLocaleString('vi-VN'),
+      tx.account?.name || '',
+      tx.type === 'INCOME' ? 'Thu nhap' : tx.type === 'EXPENSE' ? 'Chi tieu' : 'Chuyen khoan',
+      tx.amount,
+      tx.category?.name || (tx.type === 'INCOME' ? 'Thu nhap' : 'Khac'),
+      tx.description || '',
+      tx.status === 'SUCCESS' ? 'Thanh cong' : tx.status === 'PENDING' ? 'Cho' : 'That bai'
+    ]);
+
+    // Construct CSV String
+    const csvContent = '\uFEFF' + // UTF-8 BOM for Vietnamese Excel support
+      [headers.join(','), ...rows.map(e => e.map(val => `"${String(val).replace(/"/g, '""')}"`).join(','))].join('\n');
+
+    // Create Download Link
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `antigravity_transactions_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    setToastMessage('Tải xuống dữ liệu CSV thành công.');
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  const handleShareLink = () => {
+    const shareUrl = window.location.origin;
+    
+    if (navigator.share) {
+      navigator.share({
+        title: 'Antigravity Finance',
+        text: 'Quản lý tài chính cá nhân thông minh cùng Antigravity Finance!',
+        url: shareUrl,
+      }).catch(console.error);
+    } else {
+      navigator.clipboard.writeText(shareUrl).then(() => {
+        setToastMessage('Đã sao chép link ứng dụng vào bộ nhớ tạm.');
+        setTimeout(() => setToastMessage(null), 3000);
+      }).catch(() => {
+        setToastMessage('Không thể sao chép link. Vui lòng thử lại.');
+        setTimeout(() => setToastMessage(null), 3000);
+      });
+    }
   };
 
   // Sync state if props change (Next.js server-side revalidation)
@@ -266,16 +365,24 @@ export default function DashboardOverview({
 
         {/* Tools bar matching the reference design */}
         <div className="flex flex-wrap items-center gap-3">
-          {/* Search bar */}
+          {/* Search bar - Now fully functional */}
           <div className="relative w-full sm:w-60">
             <Search className="w-4 h-4 text-brand-text-soft absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input 
               type="text" 
-              placeholder="Search..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Tìm kiếm giao dịch..." 
               className="w-full bg-[#0c0d12]/50 border border-brand-border rounded-xl pl-10 pr-4 py-2.5 text-xs text-white outline-none focus:border-brand-gold/50 transition"
-              disabled
             />
-            <span className="hidden sm:inline-block absolute right-3 top-1/2 -translate-y-1/2 text-[9px] font-mono text-brand-text-soft/60 bg-brand-border/40 px-1.5 py-0.5 rounded border border-brand-border/25">⌘ F</span>
+            {searchTerm && (
+              <button 
+                onClick={() => setSearchTerm('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-brand-text-soft hover:text-white"
+              >
+                ✕
+              </button>
+            )}
           </div>
 
           {/* Toggle eye */}
@@ -287,25 +394,61 @@ export default function DashboardOverview({
             {showBalance ? <EyeOff className="w-4.5 h-4.5" /> : <Eye className="w-4.5 h-4.5" />}
           </button>
 
-          {/* Sun icon / Darkmode mock */}
-          <button className="p-2.5 rounded-xl border border-brand-border bg-[#0c0d12]/40 text-brand-text-soft cursor-not-allowed">
-            <Sun className="w-4.5 h-4.5" />
+          {/* Sun/Moon icon - Light/Darkmode switcher */}
+          <button 
+            onClick={handleThemeToggle}
+            className="p-2.5 rounded-xl border border-brand-border bg-[#0c0d12]/40 hover:bg-brand-card hover:text-brand-gold text-brand-text-soft transition cursor-pointer"
+            title={theme === 'dark' ? 'Chuyển sang giao diện Sáng' : 'Chuyển sang giao diện Tối'}
+          >
+            {theme === 'dark' ? <Sun className="w-4.5 h-4.5" /> : <Moon className="w-4.5 h-4.5" />}
           </button>
 
-          {/* Notification bell mock */}
-          <button className="p-2.5 rounded-xl border border-brand-border bg-[#0c0d12]/40 text-brand-text-soft cursor-not-allowed relative">
-            <Bell className="w-4.5 h-4.5" />
-            <span className="w-1.5 h-1.5 rounded-full bg-brand-gold absolute top-2 right-2 animate-ping" />
-          </button>
+          {/* Notification bell popover */}
+          <div className="relative" ref={notifRef}>
+            <button 
+              onClick={() => setIsNotifOpen(!isNotifOpen)}
+              className="p-2.5 rounded-xl border border-brand-border bg-[#0c0d12]/40 hover:bg-brand-card hover:text-brand-gold text-brand-text-soft transition cursor-pointer relative"
+              title="Thông báo tài chính"
+            >
+              <Bell className="w-4.5 h-4.5" />
+              <span className="w-1.5 h-1.5 rounded-full bg-brand-gold absolute top-2.5 right-2.5" />
+            </button>
 
-          {/* Export button */}
-          <button className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-brand-border bg-[#0c0d12]/40 text-brand-text-soft text-xs font-semibold hover:text-white transition cursor-pointer">
+            {/* Notification Popover Panel */}
+            {isNotifOpen && (
+              <div className="absolute right-0 mt-2.5 w-72 glass-panel rounded-2xl overflow-hidden shadow-2xl z-50 animate-in fade-in slide-in-from-top-2 duration-150 p-4 space-y-3 bg-[#0c0d12]/95">
+                <h4 className="text-xs font-bold text-white uppercase tracking-wider border-b border-brand-border/40 pb-2 flex items-center gap-1.5">
+                  <Bell className="w-3.5 h-3.5 text-brand-gold" />
+                  Thông báo mới
+                </h4>
+                <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
+                  {notifications.map((notif) => (
+                    <div key={notif.id} className="text-[11px] leading-normal border-b border-brand-border/20 pb-2.5 last:border-0 last:pb-0">
+                      <p className="text-white">{notif.text}</p>
+                      <span className="text-[9px] text-brand-text-soft/60 block mt-1">{notif.time}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Export button - Fully functional */}
+          <button 
+            onClick={handleExportCSV}
+            className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-brand-border bg-[#0c0d12]/40 text-brand-text-soft text-xs font-semibold hover:text-white transition cursor-pointer"
+            title="Tải xuống toàn bộ giao dịch dạng file Excel CSV"
+          >
             <Download className="w-4 h-4" />
             <span>Export Data</span>
           </button>
 
-          {/* Share button (Gold) */}
-          <button className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-brand-gold hover:bg-brand-gold-hover text-brand-charcoal text-xs font-bold transition cursor-pointer shadow-md shadow-brand-gold/10">
+          {/* Share button (Gold) - Fully functional */}
+          <button 
+            onClick={handleShareLink}
+            className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-brand-gold hover:bg-brand-gold-hover text-brand-charcoal text-xs font-bold transition cursor-pointer shadow-md shadow-brand-gold/10"
+            title="Chia sẻ liên kết ứng dụng"
+          >
             <Share2 className="w-4 h-4" />
             <span>Share</span>
           </button>
@@ -320,13 +463,14 @@ export default function DashboardOverview({
         {/* COLUMN 1: LEFT PANEL (Total Balance, Wallet list, Promo Banner) */}
         <div className="lg:col-span-3 space-y-6">
           
-          {/* A. Total Balance Card */}
+          {/* A. Total Balance Card - cộng (+) button opens Modal */}
           <div className="glass-panel rounded-2xl p-5 relative overflow-hidden flex flex-col justify-between h-44">
             <div className="flex justify-between items-center">
               <span className="text-[10px] font-bold text-brand-text-soft uppercase tracking-wider">Total Balance</span>
               <button 
                 onClick={() => setIsQuickActionOpen(true)}
                 className="w-7 h-7 rounded-lg bg-[#1b1e28] border border-brand-border flex items-center justify-center text-brand-text-soft hover:text-brand-gold hover:border-brand-gold/20 transition cursor-pointer"
+                title="Nhập nhanh giao dịch"
               >
                 <Plus className="w-4 h-4" />
               </button>
@@ -400,7 +544,7 @@ export default function DashboardOverview({
             </div>
           </div>
 
-          {/* C. Promo Banner (Bottom Left) matching reference image */}
+          {/* C. Promo Banner (Bottom Left) - Bắt đầu kế hoạch của bạn navigates to budgets */}
           <div className="relative rounded-2xl p-5 overflow-hidden min-h-[170px] flex flex-col justify-between border border-brand-border/60 bg-gradient-to-br from-[#1b2230] to-[#0c0d12] shadow-xl group">
             {/* Rock texture background simulation via gradient and mesh opacity */}
             <div className="absolute inset-0 bg-cover bg-center mix-blend-overlay opacity-20 pointer-events-none" style={{ backgroundImage: `url('https://images.unsplash.com/photo-1605721911519-3dfeb3be25e7?q=80&w=400&auto=format&fit=crop')` }} />
@@ -420,7 +564,7 @@ export default function DashboardOverview({
                 <span className="text-[8px] font-semibold text-brand-text-soft uppercase tracking-wide">Tăng trưởng tiết kiệm</span>
               </div>
               <button 
-                onClick={() => setIsQuickActionOpen(true)}
+                onClick={() => router.push('/budgets')}
                 className="w-full flex items-center justify-between bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 text-white text-[10px] font-bold py-2.5 px-3 rounded-lg transition cursor-pointer"
               >
                 <span>Bắt đầu kế hoạch của bạn</span>
@@ -430,12 +574,13 @@ export default function DashboardOverview({
           </div>
         </div>
 
-        {/* COLUMN 2: MIDDLE PANEL (Analytics Chart, Recent Transactions) */}
+        {/* COLUMN 2: MIDDLE PANEL (Analytics Chart, Recent Transactions with search) */}
         <div className="lg:col-span-6 space-y-6">
           <AnalyticsChart data={analyticsData} />
           
           <RecentTransactions 
             initialTransactions={transactions}
+            searchTerm={searchTerm}
             onTransactionDeleted={handleTransactionDeleted}
           />
         </div>
