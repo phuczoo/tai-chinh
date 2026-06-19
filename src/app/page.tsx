@@ -7,6 +7,8 @@ import LoadingSpinner from '@/components/LoadingSpinner';
 import { Suspense } from 'react';
 import { AlertCircle } from 'lucide-react';
 
+import { checkAuth } from '@/lib/auth-check';
+
 export const metadata = {
   title: 'Dashboard | Antigravity Finance',
   description: 'Tổng quan tài sản và nguồn tiền cá nhân của bạn.',
@@ -14,7 +16,9 @@ export const metadata = {
 
 export const dynamic = 'force-dynamic';
 
-export default function HomePage() {
+export default async function HomePage() {
+  await checkAuth(); // Kiểm tra bảo mật
+  
   return (
     <DashboardLayout>
       <Suspense fallback={<LoadingSpinner message="Đang đồng bộ tổng quan tài chính..." />}>

@@ -4,6 +4,8 @@ import { getRecentTransactions } from '@/app/actions/transactions';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { Suspense } from 'react';
 
+import { checkAuth } from '@/lib/auth-check';
+
 export const metadata = {
   title: 'Lịch sử giao dịch | Antigravity Finance',
   description: 'Quản lý và xem lịch sử giao dịch thu chi của bạn.',
@@ -11,7 +13,9 @@ export const metadata = {
 
 export const dynamic = 'force-dynamic';
 
-export default function TransactionsPage() {
+export default async function TransactionsPage() {
+  await checkAuth(); // Kiểm tra bảo mật
+  
   return (
     <DashboardLayout>
       <div className="p-6 max-w-7xl mx-auto w-full space-y-6">

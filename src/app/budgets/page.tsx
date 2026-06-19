@@ -4,6 +4,8 @@ import { getMonthlyBudgets } from '@/app/actions/budgets';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { Suspense } from 'react';
 
+import { checkAuth } from '@/lib/auth-check';
+
 export const metadata = {
   title: 'Hạn mức ngân sách | Antigravity Finance',
   description: 'Quản lý hạn mức chi tiêu hàng tháng theo từng danh mục.',
@@ -11,7 +13,9 @@ export const metadata = {
 
 export const dynamic = 'force-dynamic';
 
-export default function BudgetsPage() {
+export default async function BudgetsPage() {
+  await checkAuth(); // Kiểm tra bảo mật
+  
   const now = new Date();
   const currentMonthYear = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 

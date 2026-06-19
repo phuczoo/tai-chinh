@@ -5,6 +5,8 @@ import LoadingSpinner from '@/components/LoadingSpinner';
 import { Suspense } from 'react';
 import { TrendingUp, TrendingDown, Landmark, Sparkles, AlertTriangle } from 'lucide-react';
 
+import { checkAuth } from '@/lib/auth-check';
+
 export const metadata = {
   title: 'Thống kê tài chính | Antigravity Finance',
   description: 'Thống kê thu nhập và chi tiêu của bạn trong 6 tháng gần nhất.',
@@ -12,7 +14,9 @@ export const metadata = {
 
 export const dynamic = 'force-dynamic';
 
-export default function AnalyticsPage() {
+export default async function AnalyticsPage() {
+  await checkAuth(); // Kiểm tra bảo mật
+  
   return (
     <DashboardLayout>
       <div className="p-6 max-w-7xl mx-auto w-full space-y-8">
