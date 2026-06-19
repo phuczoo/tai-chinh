@@ -4,19 +4,19 @@
 @theme {
   --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   
-  --color-background: #12141c;
+  --color-background: #090a0f;
   --color-foreground: #ffffff;
   
-  --color-brand-charcoal: #12141c;
-  --color-brand-card: #1a1d29;
-  --color-brand-card-hover: #222635;
-  --color-brand-border: #2e3347;
-  --color-brand-text-soft: #8a94a6;
-  --color-brand-gold: #e5c158;
-  --color-brand-gold-hover: #d4b047;
+  --color-brand-charcoal: #090a0f;
+  --color-brand-card: rgba(18, 20, 26, 0.65);
+  --color-brand-card-hover: rgba(28, 31, 41, 0.85);
+  --color-brand-border: rgba(255, 255, 255, 0.06);
+  --color-brand-text-soft: #858e9c;
+  --color-brand-gold: #d4af37;
+  --color-brand-gold-hover: #c59b27;
   
   --color-neon-emerald: #10b981;
-  --color-neon-amber: #f59e0b;
+  --color-neon-amber: #fb923c;
   --color-neon-rose: #f43f5e;
 }
 
@@ -26,39 +26,65 @@ body {
   font-family: var(--font-sans);
   min-height: 100vh;
   overflow-x: hidden;
+  position: relative;
 }
 
-/* Glassmorphism utility */
+/* Subtle background radial glows matching the reference design */
+body::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 500px;
+  background: radial-gradient(circle at 50% -100px, rgba(212, 175, 55, 0.05), transparent 60%),
+              radial-gradient(circle at 10% 200px, rgba(96, 165, 250, 0.02), transparent 40%);
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* Premium Glassmorphism utility with layered shadows and thin borders */
 .glass-panel {
-  background: rgba(26, 29, 41, 0.65);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(46, 51, 71, 0.5);
+  background: rgba(18, 20, 26, 0.55);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2), 
+              inset 0 1px 1px rgba(255, 255, 255, 0.02);
 }
 
 /* Fallback for devices that don't support backdrop-filter */
-@supports not (backdrop-filter: blur(12px)) {
+@supports not (backdrop-filter: blur(20px)) {
   .glass-panel {
-    background: rgba(26, 29, 41, 0.95);
-    border: 1px solid rgba(46, 51, 71, 0.8);
+    background: rgba(12, 13, 17, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.08);
   }
 }
 
-/* Custom Scrollbar */
+/* Custom Scrollbar matching slim minimalist theme */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #12141c;
+  background: #090a0f;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #2e3347;
+  background: rgba(255, 255, 255, 0.1);
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #e5c158;
+  background: var(--color-brand-gold);
+}
+
+/* Hide scrollbar utility */
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }

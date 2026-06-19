@@ -63,19 +63,22 @@ export default function RecentTransactions({ initialTransactions, onTransactionD
     switch (status) {
       case 'SUCCESS':
         return (
-          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#10b981]/15 text-[#10b981] border border-[#10b981]/25">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#10b981]/10 text-[#10b981] border border-[#10b981]/20">
+            <span className="w-1 h-1 rounded-full bg-[#10b981]" />
             Thành công
           </span>
         );
       case 'PENDING':
         return (
-          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#fb923c]/15 text-[#fb923c] border border-[#fb923c]/25">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#fb923c]/10 text-[#fb923c] border border-[#fb923c]/20">
+            <span className="w-1 h-1 rounded-full bg-[#fb923c] animate-pulse" />
             Đang chờ
           </span>
         );
       default:
         return (
-          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#f43f5e]/15 text-[#f43f5e] border border-[#f43f5e]/25">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#f43f5e]/10 text-[#f43f5e] border border-[#f43f5e]/20">
+            <span className="w-1 h-1 rounded-full bg-[#f43f5e]" />
             Thất bại
           </span>
         );

@@ -201,7 +201,7 @@ export default function BudgetTracker({ initialBudgets, currentMonthYear, onBudg
               </div>
 
               {/* Row 2: Progress bar */}
-              <div className="h-2 w-full bg-[#12141c] rounded-full overflow-hidden border border-brand-border/30">
+              <div className="h-1.5 w-full bg-[#0c0d12]/50 rounded-full overflow-hidden border border-brand-border/20">
                 <div
                   className={`h-full rounded-full transition-all duration-500 ${getProgressColor(spent, limit)}`}
                   style={{ 

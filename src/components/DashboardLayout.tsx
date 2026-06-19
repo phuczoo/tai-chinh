@@ -33,7 +33,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         setUserEmail(user.email ?? null);
-        setUserName(user.user_metadata?.full_name ?? user.email?.split('@')[0] ?? 'Người dùng');
+        setUserName(user.user_metadata?.full_name ?? user.email?.split('@')[0] ?? 'User');
       }
     };
     fetchUser();
@@ -53,76 +53,92 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row bg-brand-charcoal text-white">
+    <div className="min-h-screen flex flex-col md:flex-row bg-[#090a0f] text-white">
       {/* ==========================================
-          DESKTOP LEFT SIDEBAR
+          DESKTOP LEFT SLIM SIDEBAR
           ========================================== */}
-      <aside className="hidden md:flex flex-col w-64 bg-[#161924] border-r border-brand-border p-6 justify-between shrink-0">
-        <div className="space-y-8">
+      <aside className="hidden md:flex flex-col w-[80px] bg-[#0c0d12]/60 border-r border-brand-border py-8 items-center justify-between shrink-0 z-20 backdrop-blur-md">
+        <div className="flex flex-col items-center gap-10 w-full">
           {/* Logo */}
-          <div className="flex items-center gap-3 px-2">
-            <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-brand-gold to-[#bfa145] flex items-center justify-center shadow-md shadow-brand-gold/10">
-              <Wallet className="w-5 h-5 text-brand-charcoal" />
-            </div>
-            <span className="font-bold text-lg tracking-tight text-white">
-              Antigravity <span className="text-brand-gold font-medium">Fin</span>
-            </span>
+          <div 
+            onClick={() => router.push('/')}
+            className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-gold to-[#bfa145] flex items-center justify-center shadow-lg shadow-brand-gold/10 cursor-pointer hover:scale-105 transition"
+            title="Antigravity Finance"
+          >
+            <Wallet className="w-5 h-5 text-brand-charcoal" />
           </div>
 
           {/* Navigation Links */}
-          <nav className="space-y-1">
+          <nav className="flex flex-col gap-3 w-full px-2">
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = pathname === item.path;
               return (
-                <button
-                  key={item.path}
-                  onClick={() => router.push(item.path)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition duration-200 cursor-pointer ${
-                    isActive
-                      ? 'bg-brand-gold text-brand-charcoal shadow-md shadow-brand-gold/15'
-                      : 'text-brand-text-soft hover:text-white hover:bg-brand-card'
-                  }`}
-                >
-                  <Icon className="w-5 h-5 shrink-0" />
-                  {item.name}
-                </button>
+                <div key={item.path} className="relative group w-full flex justify-center">
+                  <button
+                    onClick={() => router.push(item.path)}
+                    className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-200 cursor-pointer relative ${
+                      isActive
+                        ? 'bg-[#1b1e28] text-brand-gold border border-brand-gold/20 shadow-md shadow-brand-gold/5'
+                        : 'text-brand-text-soft hover:text-white hover:bg-brand-card/40'
+                    }`}
+                  >
+                    <Icon className="w-5 h-5 shrink-0" />
+                    
+                    {/* Active vertical accent bar */}
+                    {isActive && (
+                      <span className="absolute left-[-8px] top-1/4 bottom-1/4 w-[3px] bg-brand-gold rounded-r-md" />
+                    )}
+                  </button>
+                  
+                  {/* Premium Hover Tooltip */}
+                  <span className="absolute left-[70px] top-1/2 -translate-y-1/2 bg-[#12141c] border border-brand-border text-[10px] font-bold text-white px-2.5 py-1.5 rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 transition duration-150 shadow-xl whitespace-nowrap z-50">
+                    {item.name}
+                  </span>
+                </div>
               );
             })}
           </nav>
         </div>
 
         {/* User profile & Logout */}
-        <div className="pt-6 border-t border-brand-border space-y-4">
-          <div className="flex items-center gap-3 px-2">
-            <div className="w-10 h-10 rounded-full bg-[#232736] flex items-center justify-center border border-brand-border">
-              <User className="w-5 h-5 text-brand-gold" />
+        <div className="flex flex-col items-center gap-6 w-full px-2">
+          {/* User profile with tooltip */}
+          <div className="relative group w-full flex justify-center">
+            <div className="w-10 h-10 rounded-full bg-[#1b1e28] flex items-center justify-center border border-brand-border cursor-pointer hover:border-brand-gold/45 transition">
+              <User className="w-4.5 h-4.5 text-brand-gold" />
             </div>
-            <div className="overflow-hidden">
-              <p className="text-sm font-semibold text-white truncate">{userName}</p>
-              <p className="text-xs text-brand-text-soft truncate">{userEmail}</p>
+            <div className="absolute left-[70px] bottom-0 bg-[#12141c] border border-brand-border p-3 rounded-xl opacity-0 pointer-events-none group-hover:opacity-100 transition duration-150 shadow-xl z-50 w-44">
+              <p className="text-xs font-bold text-white truncate">{userName}</p>
+              <p className="text-[10px] text-brand-text-soft truncate mt-0.5">{userEmail}</p>
             </div>
           </div>
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-neon-rose hover:bg-neon-rose/10 transition duration-200 cursor-pointer"
-          >
-            <LogOut className="w-5 h-5 shrink-0" />
-            Đăng xuất
-          </button>
+
+          {/* Logout */}
+          <div className="relative group w-full flex justify-center">
+            <button
+              onClick={handleLogout}
+              className="w-12 h-12 rounded-xl flex items-center justify-center text-neon-rose/85 hover:text-neon-rose hover:bg-neon-rose/10 transition cursor-pointer"
+            >
+              <LogOut className="w-5 h-5 shrink-0" />
+            </button>
+            <span className="absolute left-[70px] top-1/2 -translate-y-1/2 bg-[#12141c] border border-brand-border text-[10px] font-bold text-neon-rose px-2.5 py-1.5 rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 transition duration-150 shadow-xl whitespace-nowrap z-50">
+              Đăng xuất
+            </span>
+          </div>
         </div>
       </aside>
 
       {/* ==========================================
           MOBILE HEADER
           ========================================== */}
-      <header className="md:hidden flex items-center justify-between px-6 py-4 bg-[#161924] border-b border-brand-border z-20">
+      <header className="md:hidden flex items-center justify-between px-6 py-4 bg-[#0c0d12]/90 border-b border-brand-border z-20 sticky top-0 backdrop-blur-md">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-gold to-[#bfa145] flex items-center justify-center">
             <Wallet className="w-4 h-4 text-brand-charcoal" />
           </div>
           <span className="font-bold text-base text-white">
-            Antigravity <span className="text-brand-gold">Fin</span>
+            Antigravity <span className="text-brand-gold font-medium">Fin</span>
           </span>
         </div>
         <button
@@ -135,7 +151,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
       {/* MOBILE MENU DROPDOWN */}
       {isMobileMenuOpen && (
-        <div className="md:hidden fixed inset-0 top-[65px] bg-brand-charcoal/95 backdrop-blur-md z-30 flex flex-col p-6 justify-between animate-in fade-in slide-in-from-top-4 duration-200">
+        <div className="md:hidden fixed inset-0 top-[65px] bg-[#090a0f]/95 backdrop-blur-md z-30 flex flex-col p-6 justify-between animate-in fade-in slide-in-from-top-4 duration-200">
           <nav className="space-y-2">
             {navItems.map((item) => {
               const Icon = item.icon;
@@ -149,8 +165,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   }}
                   className={`w-full flex items-center gap-4 px-5 py-4 rounded-xl text-base font-semibold cursor-pointer transition ${
                     isActive
-                      ? 'bg-brand-gold text-brand-charcoal'
-                      : 'text-brand-text-soft hover:text-white hover:bg-brand-card'
+                      ? 'bg-[#1b1e28] text-brand-gold border border-brand-gold/10'
+                      : 'text-brand-text-soft hover:text-white hover:bg-[#12141c]/50'
                   }`}
                 >
                   <Icon className="w-6 h-6" />
@@ -162,7 +178,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
           <div className="pt-6 border-t border-brand-border space-y-5">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-[#232736] flex items-center justify-center border border-brand-border">
+              <div className="w-12 h-12 rounded-full bg-[#1b1e28] flex items-center justify-center border border-brand-border">
                 <User className="w-6 h-6 text-brand-gold" />
               </div>
               <div>
@@ -191,7 +207,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       {/* ==========================================
           MOBILE BOTTOM NAVIGATION (Feels like native app)
           ========================================== */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-[#161924]/90 backdrop-blur-md border-t border-brand-border flex justify-around items-center px-4 z-20">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-[#0c0d12]/90 backdrop-blur-md border-t border-brand-border flex justify-around items-center px-4 z-20">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.path;
