@@ -268,6 +268,29 @@ export default function DashboardOverview({
 
   const totalBalance = accounts.reduce((sum, acc) => sum + Number(acc.current_balance), 0);
 
+  // Tính toán phần trăm thay đổi số dư so với tháng trước một cách động
+  const getBalanceChangePercentage = () => {
+    if (!analyticsData || analyticsData.length < 2) return null;
+    
+    const currentMonthData = analyticsData[analyticsData.length - 1];
+    const prevMonthData = analyticsData[analyticsData.length - 2];
+    
+    if (!currentMonthData || !prevMonthData) return null;
+    
+    // Chỉ hiển thị so sánh khi tháng trước thực sự có dữ liệu giao dịch
+    const hasPrevMonthTransactions = prevMonthData.income > 0 || prevMonthData.expense > 0;
+    if (!hasPrevMonthTransactions) return null;
+    
+    const currentMonthNetFlow = currentMonthData.income - currentMonthData.expense;
+    const prevMonthEndingBalance = totalBalance - currentMonthNetFlow;
+    
+    if (prevMonthEndingBalance <= 0) return null;
+    
+    return (currentMonthNetFlow / prevMonthEndingBalance) * 100;
+  };
+
+  const percentChange = getBalanceChangePercentage();
+
   const getAccountIcon = (type: string) => {
     switch (type) {
       case 'BANK': return <CreditCard className="w-4 h-4" />;
@@ -482,12 +505,20 @@ export default function DashboardOverview({
               <span className="text-2xl md:text-3xl font-black text-white tracking-tight block">
                 {formatCurrency(totalBalance, showBalance)}
               </span>
-              <div className="flex items-center gap-1.5 mt-1.5">
-                <span className="text-[10px] font-bold text-neon-emerald bg-neon-emerald/10 border border-neon-emerald/20 px-1.5 py-0.5 rounded">
-                  +12.4%
-                </span>
-                <span className="text-[9px] text-brand-text-soft/80">so với tháng trước</span>
-              </div>
+              {percentChange !== null && (
+                <div className="flex items-center gap-1.5 mt-1.5">
+                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${
+                    percentChange > 0 
+                      ? 'text-neon-emerald bg-neon-emerald/10 border-neon-emerald/20' 
+                      : percentChange < 0 
+                        ? 'text-neon-rose bg-neon-rose/10 border-neon-rose/20' 
+                        : 'text-brand-text-soft bg-brand-border/40 border-brand-border/30'
+                  }`}>
+                    {percentChange > 0 ? '+' : ''}{percentChange.toFixed(1)}%
+                  </span>
+                  <span className="text-[9px] text-brand-text-soft/80">so với tháng trước</span>
+                </div>
+              )}
             </div>
             
             <div className="text-[9px] text-brand-text-soft border-t border-brand-border/40 pt-3 flex justify-between items-center">
