@@ -37,7 +37,14 @@ export async function proxy(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const isAuthPage = request.nextUrl.pathname.startsWith('/auth');
+  const pathname = request.nextUrl.pathname;
+  const isAuthPage = pathname.startsWith('/auth');
+  const isPublicAsset = pathname === '/manifest.json' || pathname === '/sw.js';
+
+  // Allow manifest.json and sw.js to be fetched publicly
+  if (isPublicAsset) {
+    return response;
+  }
 
   // Protect paths: redirect to /auth if not logged in
   if (!user && !isAuthPage) {
@@ -63,8 +70,10 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
+     * - manifest.json
+     * - sw.js
      * - api routes that might handle public webhooks, etc.
      */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|manifest\\.json|sw\\.js|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 };
