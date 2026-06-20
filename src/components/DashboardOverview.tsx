@@ -38,6 +38,7 @@ interface DashboardOverviewProps {
   initialBudgets: Budget[];
   currentMonthYear: string;
   analyticsData: MonthAnalytics[];
+  weeklyAnalyticsData: MonthAnalytics[];
   categories: Category[];
 }
 
@@ -100,6 +101,7 @@ export default function DashboardOverview({
   initialBudgets,
   currentMonthYear,
   analyticsData,
+  weeklyAnalyticsData,
   categories
 }: DashboardOverviewProps) {
   const [accounts, setAccounts] = useState<Account[]>(initialAccounts);
@@ -576,7 +578,7 @@ export default function DashboardOverview({
 
         {/* COLUMN 2: MIDDLE PANEL (Analytics Chart, Recent Transactions with search) */}
         <div className="lg:col-span-6 space-y-6">
-          <AnalyticsChart data={analyticsData} />
+          <AnalyticsChart data={analyticsData} weeklyData={weeklyAnalyticsData} />
           
           <RecentTransactions 
             initialTransactions={transactions}

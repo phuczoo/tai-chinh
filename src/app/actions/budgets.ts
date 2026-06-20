@@ -174,3 +174,112 @@ export async function getAnalyticsData(): Promise<MonthAnalytics[]> {
     };
   });
 }
+
+/**
+ * Thống kê dữ liệu thu nhập và chi tiêu của 7 ngày gần nhất để vẽ biểu đồ theo tuần.
+ * Sử dụng múi giờ Việt Nam (Asia/Ho_Chi_Minh) để nhóm dữ liệu chính xác theo ngày.
+ */
+export async function getWeeklyAnalyticsData(): Promise<MonthAnalytics[]> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new Error('Người dùng chưa đăng nhập.');
+  }
+
+  // 1. Tính ngày bắt đầu (7 ngày trước ở múi giờ VN, tính từ 00:00:00 của ngày đó)
+  const now = new Date();
+  
+  // Format sang định dạng VN
+  const getVNFormat = (date: Date) => {
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Asia/Ho_Chi_Minh',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    });
+    const parts = formatter.formatToParts(date);
+    const year = parts.find(p => p.type === 'year')?.value;
+    const month = parts.find(p => p.type === 'month')?.value;
+    const day = parts.find(p => p.type === 'day')?.value;
+    return `${year}-${month}-${day}`;
+  };
+
+  const getVNLabel = (date: Date) => {
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'Asia/Ho_Chi_Minh',
+      month: '2-digit',
+      day: '2-digit',
+      weekday: 'short'
+    });
+    const parts = formatter.formatToParts(date);
+    const month = parts.find(p => p.type === 'month')?.value;
+    const day = parts.find(p => p.type === 'day')?.value;
+    const weekdayEN = parts.find(p => p.type === 'weekday')?.value;
+    
+    const map: Record<string, string> = {
+      'Mon': 'T2', 'Tue': 'T3', 'Wed': 'T4', 'Thu': 'T5', 'Fri': 'T6', 'Sat': 'T7', 'Sun': 'CN'
+    };
+    const weekdayVN = map[weekdayEN || ''] || 'T2';
+    return `${weekdayVN} (${day}/${month})`;
+  };
+
+  // Khởi tạo danh sách 7 ngày gần nhất (GMT+7)
+  const daysList: { key: string; label: string }[] = [];
+  const analyticsMap = new Map<string, { income: number; expense: number }>();
+
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(now.getDate() - i);
+    const key = getVNFormat(d);
+    const label = getVNLabel(d);
+    daysList.push({ key, label });
+    analyticsMap.set(key, { income: 0, expense: 0 });
+  }
+
+  // Lấy ngày bắt đầu ở định dạng ISO từ ngày đầu tiên của danh sách
+  // Để tối ưu hóa truy vấn, chúng ta lấy mốc thời gian từ 7 ngày trước lúc 00:00:00 VN
+  const firstDay = new Date(now);
+  firstDay.setDate(now.getDate() - 6);
+  firstDay.setHours(0, 0, 0, 0);
+
+  // 2. Truy vấn giao dịch thành công (SUCCESS) trong 7 ngày qua
+  const { data: transactions, error } = await supabase
+    .from('transactions')
+    .select('*')
+    .eq('status', 'SUCCESS')
+    .gte('created_at', firstDay.toISOString())
+    .order('created_at', { ascending: true });
+
+  if (error) {
+    throw new Error(`Lỗi lấy dữ liệu thống kê tuần: ${error.message}`);
+  }
+
+  // 3. Phân loại và cộng dồn theo ngày của múi giờ VN
+  if (transactions) {
+    transactions.forEach((tx) => {
+      const txDate = new Date(tx.created_at);
+      const key = getVNFormat(txDate);
+      
+      const stats = analyticsMap.get(key);
+      if (stats) {
+        const amount = Number(tx.amount);
+        if (tx.type === 'INCOME') {
+          stats.income += amount;
+        } else if (tx.type === 'EXPENSE') {
+          stats.expense += amount;
+        }
+      }
+    });
+  }
+
+  // 4. Trả về mảng dữ liệu có tên nhãn gọn gàng cho X-axis
+  return daysList.map((d) => {
+    const stats = analyticsMap.get(d.key) || { income: 0, expense: 0 };
+    return {
+      name: d.label,
+      income: stats.income,
+      expense: stats.expense,
+    };
+  });
+}

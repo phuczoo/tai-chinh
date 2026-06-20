@@ -2,7 +2,7 @@ import DashboardLayout from '@/components/DashboardLayout';
 import DashboardOverview from '@/components/DashboardOverview';
 import { getAccounts } from '@/app/actions/accounts';
 import { getRecentTransactions } from '@/app/actions/transactions';
-import { getMonthlyBudgets, getAnalyticsData } from '@/app/actions/budgets';
+import { getMonthlyBudgets, getAnalyticsData, getWeeklyAnalyticsData } from '@/app/actions/budgets';
 import { getCategories } from '@/app/actions/categories';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { Suspense } from 'react';
@@ -35,12 +35,13 @@ async function DashboardContent() {
     const now = new Date();
     const currentMonthYear = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
-    // 2. Chạy đồng thời 5 truy vấn song song để tối ưu hóa hiệu năng
-    const [accounts, recentTransactions, monthlyBudgets, analyticsData, categories] = await Promise.all([
+    // 2. Chạy đồng thời 6 truy vấn song song để tối ưu hóa hiệu năng
+    const [accounts, recentTransactions, monthlyBudgets, analyticsData, weeklyAnalyticsData, categories] = await Promise.all([
       getAccounts(),
       getRecentTransactions(8),
       getMonthlyBudgets(currentMonthYear),
       getAnalyticsData(),
+      getWeeklyAnalyticsData(),
       getCategories()
     ]);
 
@@ -51,6 +52,7 @@ async function DashboardContent() {
         initialBudgets={monthlyBudgets}
         currentMonthYear={currentMonthYear}
         analyticsData={analyticsData}
+        weeklyAnalyticsData={weeklyAnalyticsData}
         categories={categories}
       />
     );

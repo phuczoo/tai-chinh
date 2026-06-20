@@ -1,6 +1,6 @@
 import DashboardLayout from '@/components/DashboardLayout';
 import AnalyticsChart from '@/components/AnalyticsChart';
-import { getAnalyticsData } from '@/app/actions/budgets';
+import { getAnalyticsData, getWeeklyAnalyticsData } from '@/app/actions/budgets';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { Suspense } from 'react';
 import { TrendingUp, TrendingDown, Landmark, Sparkles, AlertTriangle } from 'lucide-react';
@@ -40,7 +40,10 @@ const formatCurrency = (amount: number) => {
 };
 
 async function AnalyticsContent() {
-  const analyticsData = await getAnalyticsData();
+  const [analyticsData, weeklyAnalyticsData] = await Promise.all([
+    getAnalyticsData(),
+    getWeeklyAnalyticsData()
+  ]);
 
   // Tính tổng thu, tổng chi và tiết kiệm ròng của 6 tháng qua
   const totalIncome = analyticsData.reduce((sum, d) => sum + d.income, 0);
@@ -102,7 +105,7 @@ async function AnalyticsContent() {
 
       {/* Larger Chart */}
       <div className="w-full">
-        <AnalyticsChart data={analyticsData} />
+        <AnalyticsChart data={analyticsData} weeklyData={weeklyAnalyticsData} />
       </div>
 
       {/* Motivational Tip */}

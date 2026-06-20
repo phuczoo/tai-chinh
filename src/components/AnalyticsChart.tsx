@@ -16,13 +16,18 @@ import { BarChart3, Calendar, ChevronDown } from 'lucide-react';
 
 interface AnalyticsChartProps {
   data: MonthAnalytics[];
+  weeklyData?: MonthAnalytics[];
 }
 
-const CustomTooltip = ({ active, payload, label }: any) => {
+const CustomTooltip = ({ active, payload, label, filter }: any) => {
   if (active && payload && payload.length) {
+    // Nếu là tuần thì label có dạng "T5 (18/06)" -> hiển thị nguyên bản
+    // Nếu là tháng thì hiển thị "Tháng X"
+    const title = filter === '1W' ? label : `Tháng ${label.replace('T', '')}`;
+    
     return (
       <div className="glass-panel p-3 rounded-xl border border-brand-border text-xs space-y-1 shadow-xl bg-[#0c0d12]/95">
-        <p className="font-bold text-white mb-1.5">{`Tháng ${label.replace('T', '')}`}</p>
+        <p className="font-bold text-white mb-1.5">{title}</p>
         {payload.map((p: any) => (
           <div key={p.name} className="flex items-center gap-2">
             <span 
@@ -41,8 +46,11 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
-export default function AnalyticsChart({ data }: AnalyticsChartProps) {
+export default function AnalyticsChart({ data, weeklyData = [] }: AnalyticsChartProps) {
   const [filter, setFilter] = useState<string>('6M');
+
+  // Quyết định dùng dataset nào dựa trên bộ lọc
+  const chartData = filter === '1W' && weeklyData.length > 0 ? weeklyData : data;
 
   return (
     <div className="glass-panel rounded-2xl p-5 shadow-xl space-y-6">
@@ -57,7 +65,7 @@ export default function AnalyticsChart({ data }: AnalyticsChartProps) {
         <div className="flex items-center gap-2 self-start sm:self-auto">
           <div className="flex items-center gap-1.5 text-[10px] font-bold text-brand-text-soft bg-brand-border/30 px-3 py-1.5 rounded-xl border border-brand-border/20">
             <Calendar className="w-3.5 h-3.5" />
-            <span>6 Tháng gần nhất</span>
+            <span>{filter === '1W' ? '7 Ngày gần nhất' : '6 Tháng gần nhất'}</span>
           </div>
           
           <div className="relative">
@@ -67,7 +75,7 @@ export default function AnalyticsChart({ data }: AnalyticsChartProps) {
               className="appearance-none bg-[#0c0d12]/60 border border-brand-border text-[10px] font-bold text-white rounded-xl pl-3 pr-8 py-1.5 outline-none transition cursor-pointer"
             >
               <option value="6M">Biến động tháng</option>
-              <option value="1W" disabled>Thống kê tuần</option>
+              <option value="1W">Biến động tuần</option>
             </select>
             <ChevronDown className="w-3.5 h-3.5 text-brand-text-soft absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
           </div>
@@ -78,7 +86,7 @@ export default function AnalyticsChart({ data }: AnalyticsChartProps) {
       <div className="w-full h-[280px] text-[10px] font-bold">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
-            data={data}
+            data={chartData}
             margin={{ top: 10, right: 5, left: -20, bottom: 0 }}
           >
             {/* Gradients */}
@@ -119,7 +127,7 @@ export default function AnalyticsChart({ data }: AnalyticsChartProps) {
             />
 
             {/* Tooltip & Legend */}
-            <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.01)' }} />
+            <Tooltip content={<CustomTooltip filter={filter} />} cursor={{ fill: 'rgba(255,255,255,0.01)' }} />
             <Legend 
               verticalAlign="top"
               height={36}
