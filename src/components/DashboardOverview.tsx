@@ -28,8 +28,7 @@ import {
   Sun,
   Moon,
   Share2,
-  Download,
-  ArrowRight
+  Download
 } from 'lucide-react';
 
 interface DashboardOverviewProps {
@@ -574,35 +573,6 @@ export default function DashboardOverview({
                   </div>
                 );
               })}
-            </div>
-          </div>
-
-          {/* C. Promo Banner (Bottom Left) - Bắt đầu kế hoạch của bạn navigates to budgets */}
-          <div className="relative rounded-2xl p-5 overflow-hidden min-h-[170px] flex flex-col justify-between border border-brand-border/60 bg-gradient-to-br from-[#1b2230] to-[#0c0d12] shadow-xl group">
-            {/* Rock texture background simulation via gradient and mesh opacity */}
-            <div className="absolute inset-0 bg-cover bg-center mix-blend-overlay opacity-20 pointer-events-none" style={{ backgroundImage: `url('https://images.unsplash.com/photo-1605721911519-3dfeb3be25e7?q=80&w=400&auto=format&fit=crop')` }} />
-            
-            <div className="space-y-1.5 z-10">
-              <h3 className="text-lg font-black text-white leading-tight font-serif italic tracking-wide">
-                Ready to Break Free Financially?
-              </h3>
-              <p className="text-[10px] text-brand-text-soft leading-normal">
-                Đây là thời điểm để kiểm soát dòng tiền và nâng tầm tự do tài chính của bạn.
-              </p>
-            </div>
-
-            <div className="z-10 pt-4 flex flex-col gap-2">
-              <div className="flex items-baseline gap-1">
-                <span className="text-2xl font-black text-brand-gold">28%</span>
-                <span className="text-[8px] font-semibold text-brand-text-soft uppercase tracking-wide">Tăng trưởng tiết kiệm</span>
-              </div>
-              <button 
-                onClick={() => router.push('/budgets')}
-                className="w-full flex items-center justify-between bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 text-white text-[10px] font-bold py-2.5 px-3 rounded-lg transition cursor-pointer"
-              >
-                <span>Bắt đầu kế hoạch của bạn</span>
-                <ArrowRight className="w-3.5 h-3.5 text-brand-gold group-hover:translate-x-1 transition-transform" />
-              </button>
             </div>
           </div>
         </div>
