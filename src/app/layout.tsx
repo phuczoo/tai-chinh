@@ -38,7 +38,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{
             __html: `
               if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-                window.addEventListener('load', function() {
+                const register = function() {
                   navigator.serviceWorker.register('/sw.js').then(
                     function(registration) {
                       console.log('PWA ServiceWorker registered successfully with scope: ', registration.scope);
@@ -47,7 +47,13 @@ export default function RootLayout({
                       console.log('PWA ServiceWorker registration failed: ', err);
                     }
                   );
-                });
+                };
+
+                if (document.readyState === 'complete') {
+                  register();
+                } else {
+                  window.addEventListener('load', register);
+                }
               }
             `
           }}
