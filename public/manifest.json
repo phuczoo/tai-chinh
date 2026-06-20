@@ -1,0 +1,24 @@
+{
+  "name": "Antigravity Fin - Quản lý tài chính",
+  "short_name": "Antigravity Fin",
+  "description": "Ứng dụng quản lý tài chính cá nhân thông minh, theo dõi thu chi, ngân sách và nguồn tiền.",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0c0d12",
+  "theme_color": "#e5c158",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
