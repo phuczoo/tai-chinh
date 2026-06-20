@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Account, Category, TransactionType, TransactionStatus } from '@/types';
-import { createTransaction } from '@/app/actions/transactions';
+import { Account, Category, Transaction, TransactionType, TransactionStatus } from '@/types';
+import { createTransaction, updateTransaction } from '@/app/actions/transactions';
 import { ICON_MAP } from './CategoryManager';
 import { 
   X, 
@@ -11,7 +11,9 @@ import {
   Calendar,
   FileText,
   Delete,
-  MoreHorizontal
+  MoreHorizontal,
+  Edit2,
+  Check
 } from 'lucide-react';
 
 interface QuickActionModalProps {
@@ -20,6 +22,7 @@ interface QuickActionModalProps {
   accounts: Account[];
   categories: Category[];
   onSuccess?: () => void;
+  editingTransaction?: Transaction | null;
 }
 
 // Hàm định dạng số có dấu chấm phân cách hàng nghìn
@@ -29,7 +32,14 @@ const formatNumberString = (val: string) => {
   return new Intl.NumberFormat('vi-VN').format(Number(clean));
 };
 
-export default function QuickActionModal({ isOpen, onClose, accounts, categories, onSuccess }: QuickActionModalProps) {
+export default function QuickActionModal({ 
+  isOpen, 
+  onClose, 
+  accounts, 
+  categories, 
+  onSuccess,
+  editingTransaction = null
+}: QuickActionModalProps) {
   const [type, setType] = useState<TransactionType>('EXPENSE');
   const [amount, setAmount] = useState<string>(''); // Lưu trữ chuỗi đã được định dạng (vd: 100.000)
   const [accountId, setAccountId] = useState<string>('');
@@ -42,34 +52,57 @@ export default function QuickActionModal({ isOpen, onClose, accounts, categories
   const [error, setError] = useState<string | null>(null);
 
   const amountInputRef = useRef<HTMLInputElement>(null);
+  const isFormInitialized = useRef<boolean>(false);
 
   // Set default form values when modal opens
   useEffect(() => {
     if (isOpen) {
+      isFormInitialized.current = false;
       setError(null);
-      setAmount('');
-      setDescription('');
-      setStatus('SUCCESS');
       
-      const now = new Date();
-      const offset = now.getTimezoneOffset() * 60000;
-      const localISOTime = (new Date(now.getTime() - offset)).toISOString().slice(0, 16);
-      setCreatedAt(localISOTime);
+      if (editingTransaction) {
+        setType(editingTransaction.type);
+        setAmount(formatNumberString(String(editingTransaction.amount)));
+        setDescription(editingTransaction.description || '');
+        setStatus(editingTransaction.status);
+        setAccountId(editingTransaction.account_id);
+        setToAccountId(editingTransaction.to_account_id || '');
+        setCategoryId(editingTransaction.category_id || '');
 
-      setType('EXPENSE');
-
-      if (accounts.length > 0) {
-        const sorted = [...accounts].sort((a, b) => Number(b.current_balance) - Number(a.current_balance));
-        setAccountId(sorted[0].id);
+        const txDate = new Date(editingTransaction.created_at);
+        const offset = txDate.getTimezoneOffset() * 60000;
+        const localISOTime = (new Date(txDate.getTime() - offset)).toISOString().slice(0, 16);
+        setCreatedAt(localISOTime);
+      } else {
+        setAmount('');
+        setDescription('');
+        setStatus('SUCCESS');
         
-        const otherAcc = accounts.find(a => a.id !== sorted[0].id) || accounts[0];
-        setToAccountId(otherAcc.id);
+        const now = new Date();
+        const offset = now.getTimezoneOffset() * 60000;
+        const localISOTime = (new Date(now.getTime() - offset)).toISOString().slice(0, 16);
+        setCreatedAt(localISOTime);
+
+        setType('EXPENSE');
+
+        if (accounts.length > 0) {
+          const sorted = [...accounts].sort((a, b) => Number(b.current_balance) - Number(a.current_balance));
+          setAccountId(sorted[0].id);
+          
+          const otherAcc = accounts.find(a => a.id !== sorted[0].id) || accounts[0];
+          setToAccountId(otherAcc.id);
+        }
+
+        if (categories.length > 0) {
+          const foodCat = categories.find(c => c.name === 'Ăn uống') || categories[0];
+          setCategoryId(foodCat.id);
+        }
       }
 
-      if (categories.length > 0) {
-        const foodCat = categories.find(c => c.name === 'Ăn uống') || categories[0];
-        setCategoryId(foodCat.id);
-      }
+      // Đợi các state cập nhật xong rồi mới đánh dấu hoàn tất khởi tạo
+      setTimeout(() => {
+        isFormInitialized.current = true;
+      }, 50);
 
       const timer = setTimeout(() => {
         amountInputRef.current?.focus();
@@ -77,11 +110,14 @@ export default function QuickActionModal({ isOpen, onClose, accounts, categories
 
       return () => clearTimeout(timer);
     }
-  }, [isOpen, accounts, categories]);
+  }, [isOpen, accounts, categories, editingTransaction]);
 
   // Adjust category automatically when transaction type changes
   useEffect(() => {
     if (categories.length === 0) return;
+    
+    // Nếu đang chỉnh sửa và form chưa khởi tạo xong thì KHÔNG tự động thay đổi category
+    if (editingTransaction && !isFormInitialized.current) return;
 
     if (type === 'INCOME') {
       const incomeCat = categories.find(c => c.name.includes('Thu nhập') || c.name.includes('Khác')) || categories[0];
@@ -93,7 +129,7 @@ export default function QuickActionModal({ isOpen, onClose, accounts, categories
       const foodCat = categories.find(c => c.name === 'Ăn uống') || categories[0];
       setCategoryId(foodCat.id);
     }
-  }, [type, categories]);
+  }, [type, categories, editingTransaction]);
 
   if (!isOpen) return null;
 
@@ -148,7 +184,7 @@ export default function QuickActionModal({ isOpen, onClose, accounts, categories
     setIsSaving(true);
 
     try {
-      await createTransaction({
+      const transactionData = {
         account_id: accountId,
         type,
         status,
@@ -157,7 +193,13 @@ export default function QuickActionModal({ isOpen, onClose, accounts, categories
         description,
         to_account_id: type === 'TRANSFER' ? toAccountId : undefined,
         created_at: createdAt ? new Date(createdAt).toISOString() : undefined,
-      });
+      };
+
+      if (editingTransaction) {
+        await updateTransaction(editingTransaction.id, transactionData);
+      } else {
+        await createTransaction(transactionData);
+      }
 
       if (onSuccess) onSuccess();
       onClose();
@@ -179,8 +221,12 @@ export default function QuickActionModal({ isOpen, onClose, accounts, categories
         {/* Modal Header */}
         <div className="flex items-center justify-between p-5 border-b border-brand-border shrink-0">
           <h3 className="text-base font-bold text-white flex items-center gap-2">
-            <Plus className="w-5 h-5 text-brand-gold" />
-            Nhập giao dịch mới
+            {editingTransaction ? (
+              <Edit2 className="w-5 h-5 text-brand-gold" />
+            ) : (
+              <Plus className="w-5 h-5 text-brand-gold" />
+            )}
+            {editingTransaction ? 'Chỉnh sửa giao dịch' : 'Nhập giao dịch mới'}
           </h3>
           <button
             onClick={onClose}
@@ -475,8 +521,12 @@ export default function QuickActionModal({ isOpen, onClose, accounts, categories
               <Loader2 className="w-5 h-5 animate-spin" />
             ) : (
               <>
-                <Plus className="w-4 h-4 stroke-[3px]" />
-                Lưu giao dịch
+                {editingTransaction ? (
+                  <Check className="w-4 h-4 stroke-[3px]" />
+                ) : (
+                  <Plus className="w-4 h-4 stroke-[3px]" />
+                )}
+                {editingTransaction ? 'Cập nhật' : 'Ghi nhận'}
               </>
             )}
           </button>

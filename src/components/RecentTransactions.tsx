@@ -1,20 +1,26 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Transaction } from '@/types';
+import { Account, Category, Transaction } from '@/types';
 import { deleteTransaction } from '@/app/actions/transactions';
 import { ICON_MAP } from './CategoryManager';
+import QuickActionModal from './QuickActionModal';
+import { useRouter } from 'next/navigation';
 import { 
   MoreHorizontal, 
   Trash2, 
   Loader2,
   ArrowLeftRight,
+  Edit2
 } from 'lucide-react';
 
 interface RecentTransactionsProps {
   initialTransactions: Transaction[];
   searchTerm?: string;
   onTransactionDeleted?: () => void;
+  onTransactionUpdated?: () => void;
+  accounts?: Account[];
+  categories?: Category[];
 }
 
 const formatVietnameseDateTime = (dateStr: string) => {
@@ -28,9 +34,18 @@ const formatVietnameseDateTime = (dateStr: string) => {
   }).format(date);
 };
 
-export default function RecentTransactions({ initialTransactions, searchTerm = '', onTransactionDeleted }: RecentTransactionsProps) {
+export default function RecentTransactions({ 
+  initialTransactions, 
+  searchTerm = '', 
+  onTransactionDeleted,
+  onTransactionUpdated,
+  accounts = [],
+  categories = []
+}: RecentTransactionsProps) {
   const [transactions, setTransactions] = useState<Transaction[]>(initialTransactions);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+  const router = useRouter();
 
   // Sync state if prop updates
   React.useEffect(() => {
@@ -203,17 +218,28 @@ export default function RecentTransactions({ initialTransactions, searchTerm = '
 
                     {/* Column 5: Actions */}
                     <td className="py-4 text-right">
-                      <button
-                        onClick={() => handleDelete(tx.id)}
-                        disabled={deletingId === tx.id}
-                        className="p-2 rounded-lg border border-transparent hover:border-neon-rose/30 hover:bg-neon-rose/10 text-brand-text-soft hover:text-neon-rose transition cursor-pointer disabled:opacity-50 inline-flex items-center justify-center"
-                      >
-                        {deletingId === tx.id ? (
-                          <Loader2 className="w-4 h-4 animate-spin text-neon-rose" />
-                        ) : (
-                          <Trash2 className="w-4 h-4" />
+                      <div className="flex justify-end gap-1.5 items-center">
+                        {accounts.length > 0 && categories.length > 0 && (
+                          <button
+                            onClick={() => setEditingTransaction(tx)}
+                            className="p-2 rounded-lg border border-transparent hover:border-brand-gold/30 hover:bg-brand-gold/10 text-brand-text-soft hover:text-brand-gold transition cursor-pointer inline-flex items-center justify-center"
+                            title="Sửa giao dịch"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
                         )}
-                      </button>
+                        <button
+                          onClick={() => handleDelete(tx.id)}
+                          disabled={deletingId === tx.id}
+                          className="p-2 rounded-lg border border-transparent hover:border-neon-rose/30 hover:bg-neon-rose/10 text-brand-text-soft hover:text-neon-rose transition cursor-pointer disabled:opacity-50 inline-flex items-center justify-center"
+                        >
+                          {deletingId === tx.id ? (
+                            <Loader2 className="w-4 h-4 animate-spin text-neon-rose" />
+                          ) : (
+                            <Trash2 className="w-4 h-4" />
+                          )}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -221,6 +247,22 @@ export default function RecentTransactions({ initialTransactions, searchTerm = '
             </tbody>
           </table>
         </div>
+      )}
+
+      {editingTransaction && accounts.length > 0 && categories.length > 0 && (
+        <QuickActionModal
+          isOpen={!!editingTransaction}
+          onClose={() => setEditingTransaction(null)}
+          accounts={accounts}
+          categories={categories}
+          editingTransaction={editingTransaction}
+          onSuccess={() => {
+            router.refresh();
+            if (onTransactionUpdated) {
+              onTransactionUpdated();
+            }
+          }}
+        />
       )}
     </div>
   );

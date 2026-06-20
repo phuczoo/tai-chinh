@@ -1,6 +1,8 @@
 import DashboardLayout from '@/components/DashboardLayout';
 import RecentTransactions from '@/components/RecentTransactions';
 import { getRecentTransactions } from '@/app/actions/transactions';
+import { getAccounts } from '@/app/actions/accounts';
+import { getCategories } from '@/app/actions/categories';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { Suspense } from 'react';
 
@@ -35,6 +37,17 @@ export default async function TransactionsPage() {
 }
 
 async function TransactionsContent() {
-  const transactions = await getRecentTransactions(100);
-  return <RecentTransactions initialTransactions={transactions} />;
+  const [transactions, accounts, categories] = await Promise.all([
+    getRecentTransactions(100),
+    getAccounts(),
+    getCategories()
+  ]);
+  
+  return (
+    <RecentTransactions 
+      initialTransactions={transactions} 
+      accounts={accounts}
+      categories={categories}
+    />
+  );
 }

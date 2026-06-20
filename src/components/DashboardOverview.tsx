@@ -349,6 +349,12 @@ export default function DashboardOverview({
     setTimeout(() => setToastMessage(null), 3000);
   };
 
+  const handleTransactionUpdated = () => {
+    router.refresh();
+    setToastMessage('Giao dịch đã được cập nhật.');
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+
   const handleBudgetUpdated = () => {
     router.refresh();
   };
@@ -585,6 +591,9 @@ export default function DashboardOverview({
             initialTransactions={transactions}
             searchTerm={searchTerm}
             onTransactionDeleted={handleTransactionDeleted}
+            onTransactionUpdated={handleTransactionUpdated}
+            accounts={accounts}
+            categories={categories}
           />
         </div>
 
