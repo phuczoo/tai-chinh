@@ -156,3 +156,72 @@ export async function getRecentTransactions(limit: number = 5): Promise<Transact
 
   return data as unknown as Transaction[];
 }
+
+export interface CategoryBreakdown {
+  categoryId: string | null;
+  categoryName: string;
+  amount: number;
+  icon: string;
+  color: string;
+}
+
+export async function getExpenseBreakdown(
+  startDate?: string,
+  endDate?: string
+): Promise<CategoryBreakdown[]> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new Error('Người dùng chưa đăng nhập.');
+  }
+
+  let query = supabase
+    .from('transactions')
+    .select('*, category:categories!category_id(id, name, icon, color)')
+    .eq('user_id', user.id)
+    .eq('type', 'EXPENSE')
+    .eq('status', 'SUCCESS');
+
+  if (startDate) {
+    query = query.gte('created_at', startDate);
+  }
+  if (endDate) {
+    query = query.lte('created_at', endDate);
+  }
+
+  const { data: transactions, error } = await query;
+
+  if (error) {
+    throw new Error(`Lỗi lấy dữ liệu phân bổ chi tiêu: ${error.message}`);
+  }
+
+  const groups: Record<string, CategoryBreakdown> = {};
+  const defaultCategoryKey = 'none';
+
+  if (transactions) {
+    transactions.forEach((tx) => {
+      const cat = tx.category;
+      const catId = cat ? cat.id : null;
+      const catName = cat ? cat.name : 'Khác';
+      const catIcon = cat ? cat.icon : 'MoreHorizontal';
+      const catColor = cat ? cat.color : '#9ca3af';
+      const amount = Number(tx.amount);
+
+      const key = catId || defaultCategoryKey;
+      if (!groups[key]) {
+        groups[key] = {
+          categoryId: catId,
+          categoryName: catName,
+          amount: 0,
+          icon: catIcon,
+          color: catColor,
+        };
+      }
+      groups[key].amount += amount;
+    });
+  }
+
+  return Object.values(groups).sort((a, b) => b.amount - a.amount);
+}
+

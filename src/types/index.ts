@@ -62,3 +62,22 @@ export const ACCOUNT_TYPE_LABELS: Record<AccountType, string> = {
   WALLET: 'Ví điện tử',
   CASH: 'Tiền mặt',
 };
+
+export const CATEGORY_COLORS: Record<string, string> = {
+  'Ăn uống': '#e5c158',
+  'Cố định': '#60a5fa',
+  'Giáo dục': '#c084fc',
+  'Mua sắm': '#f472b6',
+  'Di chuyển': '#fb923c',
+  'Khác': '#9ca3af',
+};
+
+export const CATEGORY_LABELS: Record<string, string> = {
+  'Ăn uống': 'Ăn uống',
+  'Cố định': 'Cố định',
+  'Giáo dục': 'Giáo dục',
+  'Mua sắm': 'Mua sắm',
+  'Di chuyển': 'Di chuyển',
+  'Khác': 'Khác',
+};
+

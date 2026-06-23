@@ -1,6 +1,8 @@
 import DashboardLayout from '@/components/DashboardLayout';
 import AnalyticsChart from '@/components/AnalyticsChart';
+import CategoryBreakdownChart from '@/components/CategoryBreakdownChart';
 import { getAnalyticsData, getWeeklyAnalyticsData } from '@/app/actions/budgets';
+import { getExpenseBreakdown } from '@/app/actions/transactions';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { Suspense } from 'react';
 import { TrendingUp, TrendingDown, Landmark, Sparkles, AlertTriangle } from 'lucide-react';
@@ -40,9 +42,14 @@ const formatCurrency = (amount: number) => {
 };
 
 async function AnalyticsContent() {
-  const [analyticsData, weeklyAnalyticsData] = await Promise.all([
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999).toISOString();
+
+  const [analyticsData, weeklyAnalyticsData, breakdownData] = await Promise.all([
     getAnalyticsData(),
-    getWeeklyAnalyticsData()
+    getWeeklyAnalyticsData(),
+    getExpenseBreakdown(startOfMonth, endOfMonth)
   ]);
 
   // Tính tổng thu, tổng chi và tiết kiệm ròng của 6 tháng qua
@@ -103,9 +110,14 @@ async function AnalyticsContent() {
         </div>
       </div>
 
-      {/* Larger Chart */}
-      <div className="w-full">
-        <AnalyticsChart data={analyticsData} weeklyData={weeklyAnalyticsData} />
+      {/* Larger Chart & Category breakdown side-by-side on lg screen */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="lg:col-span-7 xl:col-span-8">
+          <AnalyticsChart data={analyticsData} weeklyData={weeklyAnalyticsData} />
+        </div>
+        <div className="lg:col-span-5 xl:col-span-4">
+          <CategoryBreakdownChart data={breakdownData} />
+        </div>
       </div>
 
       {/* Motivational Tip */}
