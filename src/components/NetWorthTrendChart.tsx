@@ -3,8 +3,8 @@
 import React from 'react';
 import { MonthNetWorth } from '@/app/actions/transactions';
 import { 
-  LineChart, 
-  Line, 
+  AreaChart, 
+  Area, 
   XAxis, 
   YAxis, 
   CartesianGrid, 
@@ -57,10 +57,18 @@ export default function NetWorthTrendChart({ data = [] }: NetWorthTrendChartProp
       {/* Chart Wrapper Container with min-h-[300px] */}
       <div className="w-full min-h-[300px] text-[10px] font-bold">
         <ResponsiveContainer width="100%" height={300}>
-          <LineChart
+          <AreaChart
             data={data}
             margin={{ top: 15, right: 10, left: -20, bottom: 0 }}
           >
+            {/* Gradients */}
+            <defs>
+              <linearGradient id="colorNetWorth" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.35}/>
+                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.01}/>
+              </linearGradient>
+            </defs>
+
             {/* Grid */}
             <CartesianGrid 
               stroke="rgba(255, 255, 255, 0.04)" 
@@ -89,16 +97,18 @@ export default function NetWorthTrendChart({ data = [] }: NetWorthTrendChartProp
             {/* Tooltip */}
             <Tooltip content={<CustomTooltip />} cursor={{ stroke: 'rgba(255,255,255,0.05)', strokeWidth: 1 }} />
 
-            {/* Line with blue glow */}
-            <Line 
+            {/* Area with blue gradient cover */}
+            <Area 
               type="monotone" 
               dataKey="netWorth" 
               stroke="#3b82f6" 
               strokeWidth={3} 
-              dot={{ fill: '#3b82f6', stroke: '#1d4ed8', strokeWidth: 2, r: 4 }}
+              fillOpacity={1}
+              fill="url(#colorNetWorth)"
+              dot={{ fill: '#ffffff', stroke: '#3b82f6', strokeWidth: 2.5, r: 4 }}
               activeDot={{ r: 6, strokeWidth: 0, fill: '#60a5fa' }}
             />
-          </LineChart>
+          </AreaChart>
         </ResponsiveContainer>
       </div>
     </div>
