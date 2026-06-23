@@ -57,7 +57,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       {/* ==========================================
           DESKTOP LEFT SLIM SIDEBAR
           ========================================== */}
-      <aside className="hidden md:flex flex-col w-[80px] bg-[#0c0d12]/60 border-r border-brand-border py-8 items-center justify-between shrink-0 z-20 backdrop-blur-md">
+      <aside className="hidden md:flex flex-col w-[80px] bg-[#0c0d12]/60 border-r border-brand-border py-8 items-center justify-between shrink-0 z-20 backdrop-blur-md print:hidden">
         <div className="flex flex-col items-center gap-10 w-full">
           {/* Logo */}
           <div 
@@ -132,7 +132,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       {/* ==========================================
           MOBILE HEADER
           ========================================== */}
-      <header className="md:hidden flex items-center justify-between px-6 py-4 bg-[#0c0d12]/90 border-b border-brand-border z-20 sticky top-0 backdrop-blur-md">
+      <header className="md:hidden flex items-center justify-between px-6 py-4 bg-[#0c0d12]/90 border-b border-brand-border z-20 sticky top-0 backdrop-blur-md print:hidden">
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-gold to-[#bfa145] flex items-center justify-center">
             <Wallet className="w-4 h-4 text-brand-charcoal" />
@@ -207,7 +207,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       {/* ==========================================
           MOBILE BOTTOM NAVIGATION (Feels like native app)
           ========================================== */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-[#0c0d12]/90 backdrop-blur-md border-t border-brand-border flex justify-around items-center px-4 z-20">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-[#0c0d12]/90 backdrop-blur-md border-t border-brand-border flex justify-around items-center px-4 z-20 print:hidden">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.path;

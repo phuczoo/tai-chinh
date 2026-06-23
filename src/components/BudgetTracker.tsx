@@ -76,7 +76,7 @@ export default function BudgetTracker({ initialBudgets, currentMonthYear, onBudg
     if (limit === 0) return 'bg-brand-border';
     const ratio = spent / limit;
     if (ratio > 1.0) return 'bg-neon-rose shadow-[0_0_10px_rgba(244,63,94,0.4)]'; // Neon Rose glow
-    if (ratio >= 0.7) return 'bg-neon-amber';
+    if (ratio >= 0.8) return 'bg-neon-amber';
     return 'bg-neon-emerald';
   };
 
@@ -177,11 +177,15 @@ export default function BudgetTracker({ initialBudgets, currentMonthYear, onBudg
                   <span className="text-xs font-bold text-white">
                     {categoryName}
                   </span>
-                  {limit > 0 && ratio > 1.0 && (
-                    <span className="text-[8px] font-bold text-neon-rose bg-neon-rose/10 border border-neon-rose/25 px-1.5 py-0.2 rounded uppercase tracking-wide">
+                  {limit > 0 && ratio > 1.0 ? (
+                    <span className="text-[8px] font-bold text-neon-rose bg-neon-rose/10 border border-neon-rose/25 px-1.5 py-0.5 rounded uppercase tracking-wide">
                       Vượt
                     </span>
-                  )}
+                  ) : limit > 0 && ratio >= 0.8 ? (
+                    <span className="text-[8px] font-bold text-neon-amber bg-neon-amber/10 border border-neon-amber/25 px-1.5 py-0.5 rounded uppercase tracking-wide">
+                      Sắp vượt (80%)
+                    </span>
+                  ) : null}
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] text-brand-text-soft">

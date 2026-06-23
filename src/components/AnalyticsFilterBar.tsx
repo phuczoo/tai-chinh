@@ -38,7 +38,7 @@ export default function AnalyticsFilterBar() {
   ];
 
   return (
-    <div className="glass-panel rounded-2xl p-5 shadow-xl space-y-4">
+    <div className="glass-panel rounded-2xl p-5 shadow-xl space-y-4 print:hidden">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         {/* Title */}
         <div className="flex items-center gap-2">

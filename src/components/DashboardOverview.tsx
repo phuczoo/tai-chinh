@@ -116,12 +116,76 @@ export default function DashboardOverview({
   const [isNotifOpen, setIsNotifOpen] = useState<boolean>(false);
   const notifRef = useRef<HTMLDivElement>(null);
 
-  // Mock Notifications
-  const notifications = [
-    { id: 1, text: 'Chào mừng bạn đến với Antigravity Fin! Hãy bắt đầu thiết lập hạn mức chi tiêu.', time: 'Vừa xong' },
-    { id: 2, text: 'Tài chính khỏe mạnh: Chi tiêu của bạn hiện đang rất ổn định so với tháng trước.', time: '1 giờ trước' },
-    { id: 3, text: 'Mẹo: Nhập nhanh giao dịch bằng phím bấm (+) màu vàng ở góc phải màn hình.', time: '2 giờ trước' }
-  ];
+  // Cảnh báo hạn mức ngân sách động (Giai đoạn 3)
+  const [dismissedNotifications, setDismissedNotifications] = useState<string[]>([]);
+  
+  useEffect(() => {
+    const saved = localStorage.getItem('dismissed_notifications');
+    if (saved) {
+      try {
+        setDismissedNotifications(JSON.parse(saved));
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  }, []);
+
+  const handleDismissNotification = (id: string) => {
+    const updated = [...dismissedNotifications, id];
+    setDismissedNotifications(updated);
+    localStorage.setItem('dismissed_notifications', JSON.stringify(updated));
+  };
+
+  const generatedNotifications = React.useMemo(() => {
+    const list: { id: string; text: string; time: string; type: 'info' | 'warning' | 'danger' }[] = [];
+    
+    // Thông báo mặc định
+    const defaultInfo = [
+      { id: 'info-welcome', text: 'Chào mừng bạn đến với Antigravity Fin! Hãy bắt đầu thiết lập hạn mức chi tiêu.', time: 'Mới', type: 'info' as const },
+      { id: 'info-tip', text: 'Mẹo: Nhập nhanh giao dịch bằng phím bấm (+) màu vàng ở góc phải màn hình.', time: 'Mới', type: 'info' as const }
+    ];
+
+    defaultInfo.forEach(item => {
+      if (!dismissedNotifications.includes(item.id)) {
+        list.push(item);
+      }
+    });
+
+    // Tạo các cảnh báo động dựa trên hạn mức ngân sách
+    budgets.forEach((b) => {
+      const limit = Number(b.amount_limit);
+      const spent = Number(b.amount_spent);
+      if (limit > 0) {
+        const ratio = spent / limit;
+        const categoryName = b.category?.name || 'Khác';
+        
+        if (ratio >= 1.0) {
+          const id = `budget-warning-${b.category_id}-${currentMonthYear}-100`;
+          if (!dismissedNotifications.includes(id)) {
+            list.push({
+              id,
+              text: `⚠️ VƯỢT HẠN MỨC: Chi tiêu nhóm "${categoryName}" đã vượt hạn mức (Đã tiêu: ${new Intl.NumberFormat('vi-VN').format(spent)}đ / Hạn mức: ${new Intl.NumberFormat('vi-VN').format(limit)}đ)!`,
+              time: 'Cảnh báo',
+              type: 'danger'
+            });
+          }
+        } else if (ratio >= 0.8) {
+          const id = `budget-warning-${b.category_id}-${currentMonthYear}-80`;
+          if (!dismissedNotifications.includes(id)) {
+            list.push({
+              id,
+              text: `⚠️ SẮP VƯỢT: Chi tiêu nhóm "${categoryName}" đã chạm 80% hạn mức (Đã tiêu: ${new Intl.NumberFormat('vi-VN').format(spent)}đ / Hạn mức: ${new Intl.NumberFormat('vi-VN').format(limit)}đ)!`,
+              time: 'Cảnh báo',
+              type: 'warning'
+            });
+          }
+        }
+      }
+    });
+
+    return list;
+  }, [budgets, currentMonthYear, dismissedNotifications]);
+
   
   // Modal states
   const [isEditBalanceOpen, setIsEditBalanceOpen] = useState<boolean>(false);
@@ -374,7 +438,7 @@ export default function DashboardOverview({
       {/* Floating Action Button (FAB) for Quick Transaction Input */}
       <button
         onClick={() => setIsQuickActionOpen(true)}
-        className="fixed bottom-20 md:bottom-8 right-6 md:right-8 w-14 h-14 rounded-full bg-brand-gold hover:bg-brand-gold-hover text-brand-charcoal flex items-center justify-center shadow-lg shadow-brand-gold/20 hover:scale-110 active:scale-95 transition-all duration-200 z-40 cursor-pointer"
+        className="fixed bottom-20 md:bottom-8 right-6 md:right-8 w-14 h-14 rounded-full bg-brand-gold hover:bg-brand-gold-hover text-brand-charcoal flex items-center justify-center shadow-lg shadow-brand-gold/20 hover:scale-110 active:scale-95 transition-all duration-200 z-40 cursor-pointer print:hidden"
         title="Nhập giao dịch nhanh"
       >
         <Plus className="w-6 h-6 stroke-[3px]" />
@@ -437,11 +501,13 @@ export default function DashboardOverview({
           <div className="relative" ref={notifRef}>
             <button 
               onClick={() => setIsNotifOpen(!isNotifOpen)}
-              className="p-2.5 rounded-xl border border-brand-border bg-[#0c0d12]/40 hover:bg-brand-card hover:text-brand-gold text-brand-text-soft transition cursor-pointer relative"
+              className="p-2.5 rounded-xl border border-brand-border bg-[#0c0d12]/40 hover:bg-brand-card hover:text-brand-gold text-brand-text-soft transition cursor-pointer relative print:hidden"
               title="Thông báo tài chính"
             >
               <Bell className="w-4.5 h-4.5" />
-              <span className="w-1.5 h-1.5 rounded-full bg-brand-gold absolute top-2.5 right-2.5" />
+              {generatedNotifications.length > 0 && (
+                <span className="w-1.5 h-1.5 rounded-full bg-brand-gold absolute top-2.5 right-2.5" />
+              )}
             </button>
 
             {/* Notification Popover Panel */}
@@ -452,12 +518,27 @@ export default function DashboardOverview({
                   Thông báo mới
                 </h4>
                 <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
-                  {notifications.map((notif) => (
-                    <div key={notif.id} className="text-[11px] leading-normal border-b border-brand-border/20 pb-2.5 last:border-0 last:pb-0">
-                      <p className="text-white">{notif.text}</p>
-                      <span className="text-[9px] text-brand-text-soft/60 block mt-1">{notif.time}</span>
-                    </div>
-                  ))}
+                  {generatedNotifications.length === 0 ? (
+                    <p className="text-[10px] text-brand-text-soft/60 text-center py-4">Không có thông báo mới nào.</p>
+                  ) : (
+                    generatedNotifications.map((notif) => (
+                      <div key={notif.id} className="text-[11px] leading-normal border-b border-brand-border/20 pb-2.5 last:border-0 last:pb-0 flex justify-between gap-2 items-start">
+                        <div>
+                          <p className={notif.type === 'danger' ? 'text-neon-rose font-semibold' : notif.type === 'warning' ? 'text-[#fb923c] font-semibold' : 'text-white'}>
+                            {notif.text}
+                          </p>
+                          <span className="text-[9px] text-brand-text-soft/60 block mt-1">{notif.time}</span>
+                        </div>
+                        <button
+                          onClick={() => handleDismissNotification(notif.id)}
+                          className="text-[9px] text-brand-text-soft hover:text-white transition cursor-pointer p-0.5 shrink-0"
+                          title="Đánh dấu đã đọc"
+                        >
+                          Đóng
+                        </button>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
             )}

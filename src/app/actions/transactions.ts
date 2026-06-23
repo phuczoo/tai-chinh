@@ -312,4 +312,39 @@ export async function getNetWorthTrend(): Promise<MonthNetWorth[]> {
   }));
 }
 
+export async function getTransactionsRange(
+  startDate?: string,
+  endDate?: string
+): Promise<Transaction[]> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new Error('Người dùng chưa đăng nhập.');
+  }
+
+  let query = supabase
+    .from('transactions')
+    .select('*, account:accounts!account_id(id, name, type), to_account:accounts!to_account_id(id, name, type), category:categories!category_id(id, name, icon, color)')
+    .eq('user_id', user.id)
+    .eq('status', 'SUCCESS')
+    .order('created_at', { ascending: false });
+
+  if (startDate) {
+    query = query.gte('created_at', startDate);
+  }
+  if (endDate) {
+    query = query.lte('created_at', endDate);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    throw new Error(`Lỗi lấy lịch sử giao dịch khoảng ngày: ${error.message}`);
+  }
+
+  return data as unknown as Transaction[];
+}
+
+
 

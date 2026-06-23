@@ -3,6 +3,7 @@ import AnalyticsChart from '@/components/AnalyticsChart';
 import CategoryBreakdownChart from '@/components/CategoryBreakdownChart';
 import AnalyticsFilterBar from '@/components/AnalyticsFilterBar';
 import NetWorthTrendChart from '@/components/NetWorthTrendChart';
+import AnalyticsExportButtons from '@/components/AnalyticsExportButtons';
 import { getAnalyticsData, getWeeklyAnalyticsData } from '@/app/actions/budgets';
 import { getExpenseBreakdown, getNetWorthTrend } from '@/app/actions/transactions';
 import LoadingSpinner from '@/components/LoadingSpinner';
@@ -109,8 +110,38 @@ async function AnalyticsContent({ searchParams }: { searchParams: SearchParams }
   const netSavings = totalIncome - totalExpense;
   const savingsRate = totalIncome > 0 ? Math.round((netSavings / totalIncome) * 100) : 0;
 
+  const getRangeLabel = () => {
+    if (range === '1W') return '7 ngày gần nhất';
+    if (range === '30D') return '30 ngày gần nhất';
+    if (range === 'THIS_MONTH') return `Tháng ${now.getMonth() + 1}/${now.getFullYear()}`;
+    if (range === 'LAST_MONTH') {
+      const prev = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      return `Tháng ${prev.getMonth() + 1}/${prev.getFullYear()}`;
+    }
+    if (range === 'CUSTOM') {
+      return `Tùy chỉnh (${searchParams.customStart || '?'} đến ${searchParams.customEnd || '?'})`;
+    }
+    return 'Không xác định';
+  };
+  const rangeLabel = getRangeLabel();
+
   return (
     <div className="space-y-6">
+      {/* Nút xuất báo cáo và tóm tắt */}
+      <div className="flex justify-between items-center flex-wrap gap-4 border-b border-brand-border/40 pb-4 print:hidden">
+        <span className="text-xs text-brand-text-soft font-semibold">
+          Khoảng lọc hoạt động: <span className="text-white font-bold">{rangeLabel}</span>
+        </span>
+        <AnalyticsExportButtons 
+          rangeLabel={rangeLabel}
+          startDateStr={startDateStr}
+          endDateStr={endDateStr}
+          totalIncome={totalIncome}
+          totalExpense={totalExpense}
+          breakdownData={breakdownData}
+        />
+      </div>
+
       {/* Analytics Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         {/* Card 1: Total Income */}
