@@ -1,5 +1,7 @@
 'use server';
 
+import { getCachedUser } from '@/lib/auth-check';
+
 import { createClient } from '@/lib/supabase/server';
 import { Budget } from '@/types';
 import { revalidatePath } from 'next/cache';
@@ -11,7 +13,7 @@ import { getCategories } from './categories';
  */
 export async function getMonthlyBudgets(monthYear: string): Promise<Budget[]> {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCachedUser();
 
   if (!user) {
     throw new Error('Người dùng chưa đăng nhập.');
@@ -69,7 +71,7 @@ export async function updateBudgetLimit(
   newLimit: number
 ): Promise<Budget> {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCachedUser();
 
   if (!user) {
     throw new Error('Người dùng chưa đăng nhập.');
@@ -111,7 +113,7 @@ export interface MonthAnalytics {
 
 export async function getAnalyticsData(): Promise<MonthAnalytics[]> {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCachedUser();
 
   if (!user) {
     throw new Error('Người dùng chưa đăng nhập.');
@@ -181,7 +183,7 @@ export async function getAnalyticsData(): Promise<MonthAnalytics[]> {
  */
 export async function getWeeklyAnalyticsData(): Promise<MonthAnalytics[]> {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCachedUser();
 
   if (!user) {
     throw new Error('Người dùng chưa đăng nhập.');

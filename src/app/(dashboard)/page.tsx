@@ -1,4 +1,3 @@
-import DashboardLayout from '@/components/DashboardLayout';
 import DashboardOverview from '@/components/DashboardOverview';
 import { getAccounts } from '@/app/actions/accounts';
 import { getRecentTransactions } from '@/app/actions/transactions';
@@ -21,11 +20,9 @@ export default async function HomePage() {
   await checkAuth(); // Kiểm tra bảo mật
   
   return (
-    <DashboardLayout>
-      <Suspense fallback={<LoadingSpinner message="Đang đồng bộ tổng quan tài chính..." />}>
-        <DashboardContent />
-      </Suspense>
-    </DashboardLayout>
+    <Suspense fallback={<LoadingSpinner message="Đang đồng bộ tổng quan tài chính..." />}>
+      <DashboardContent />
+    </Suspense>
   );
 }
 

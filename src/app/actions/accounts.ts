@@ -1,5 +1,7 @@
 'use server';
 
+import { getCachedUser } from '@/lib/auth-check';
+
 import { createClient } from '@/lib/supabase/server';
 import { Account } from '@/types';
 import { revalidatePath } from 'next/cache';
@@ -11,7 +13,7 @@ import { revalidatePath } from 'next/cache';
  */
 export async function getAccounts(): Promise<Account[]> {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCachedUser();
   
   if (!user) {
     throw new Error('Người dùng chưa đăng nhập.');
@@ -59,7 +61,7 @@ export async function getAccounts(): Promise<Account[]> {
  */
 export async function updateInitialBalance(accountId: string, newInitialBalance: number): Promise<Account> {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCachedUser();
 
   if (!user) {
     throw new Error('Người dùng chưa đăng nhập.');

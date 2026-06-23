@@ -1,4 +1,3 @@
-import DashboardLayout from '@/components/DashboardLayout';
 import RecentTransactions from '@/components/RecentTransactions';
 import { getRecentTransactions } from '@/app/actions/transactions';
 import { getAccounts } from '@/app/actions/accounts';
@@ -19,20 +18,18 @@ export default async function TransactionsPage() {
   await checkAuth(); // Kiểm tra bảo mật
   
   return (
-    <DashboardLayout>
-      <div className="p-6 max-w-7xl mx-auto w-full space-y-6">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-extrabold text-white">Lịch sử giao dịch</h1>
-          <p className="text-brand-text-soft text-sm mt-1">
-            Xem và quản lý tất cả các khoản thu, chi và chuyển khoản bạn đã ghi nhận.
-          </p>
-        </div>
-        
-        <Suspense fallback={<LoadingSpinner message="Đang tải lịch sử giao dịch..." />}>
-          <TransactionsContent />
-        </Suspense>
+    <div className="p-6 max-w-7xl mx-auto w-full space-y-6">
+      <div>
+        <h1 className="text-2xl md:text-3xl font-extrabold text-white">Lịch sử giao dịch</h1>
+        <p className="text-brand-text-soft text-sm mt-1">
+          Xem và quản lý tất cả các khoản thu, chi và chuyển khoản bạn đã ghi nhận.
+        </p>
       </div>
-    </DashboardLayout>
+      
+      <Suspense fallback={<LoadingSpinner message="Đang tải lịch sử giao dịch..." />}>
+        <TransactionsContent />
+      </Suspense>
+    </div>
   );
 }
 

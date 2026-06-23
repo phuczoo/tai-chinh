@@ -1,4 +1,3 @@
-import DashboardLayout from '@/components/DashboardLayout';
 import BudgetTracker from '@/components/BudgetTracker';
 import CategoryManager from '@/components/CategoryManager';
 import { getMonthlyBudgets } from '@/app/actions/budgets';
@@ -22,20 +21,18 @@ export default async function BudgetsPage() {
   const currentMonthYear = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
   return (
-    <DashboardLayout>
-      <div className="p-6 max-w-4xl mx-auto w-full space-y-6">
-        <div>
-          <h1 className="text-2xl md:text-3xl font-extrabold text-white">Quản lý ngân sách</h1>
-          <p className="text-brand-text-soft text-sm mt-1">
-            Đặt hạn mức chi tiêu cho từng danh mục để kiểm soát tài chính tốt hơn.
-          </p>
-        </div>
-        
-        <Suspense fallback={<LoadingSpinner message="Đang tải dữ liệu ngân sách..." />}>
-          <BudgetsContent currentMonthYear={currentMonthYear} />
-        </Suspense>
+    <div className="p-6 max-w-4xl mx-auto w-full space-y-6">
+      <div>
+        <h1 className="text-2xl md:text-3xl font-extrabold text-white">Quản lý ngân sách</h1>
+        <p className="text-brand-text-soft text-sm mt-1">
+          Đặt hạn mức chi tiêu cho từng danh mục để kiểm soát tài chính tốt hơn.
+        </p>
       </div>
-    </DashboardLayout>
+      
+      <Suspense fallback={<LoadingSpinner message="Đang tải dữ liệu ngân sách..." />}>
+        <BudgetsContent currentMonthYear={currentMonthYear} />
+      </Suspense>
+    </div>
   );
 }
 

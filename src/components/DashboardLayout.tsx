@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
+import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { 
   LayoutGrid, 
@@ -60,13 +61,13 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       <aside className="hidden md:flex flex-col w-[80px] bg-[#0c0d12]/60 border-r border-brand-border py-8 items-center justify-between shrink-0 z-20 backdrop-blur-md print:hidden">
         <div className="flex flex-col items-center gap-10 w-full">
           {/* Logo */}
-          <div 
-            onClick={() => router.push('/')}
-            className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-gold to-[#bfa145] flex items-center justify-center shadow-lg shadow-brand-gold/10 cursor-pointer hover:scale-105 transition"
+          <Link 
+            href="/"
+            className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-gold to-[#bfa145] flex items-center justify-center shadow-lg shadow-brand-gold/10 hover:scale-105 transition"
             title="Antigravity Finance"
           >
             <Wallet className="w-5 h-5 text-brand-charcoal" />
-          </div>
+          </Link>
 
           {/* Navigation Links */}
           <nav className="flex flex-col gap-3 w-full px-2">
@@ -75,8 +76,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               const isActive = pathname === item.path;
               return (
                 <div key={item.path} className="relative group w-full flex justify-center">
-                  <button
-                    onClick={() => router.push(item.path)}
+                  <Link
+                    href={item.path}
                     className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-200 cursor-pointer relative ${
                       isActive
                         ? 'bg-[#1b1e28] text-brand-gold border border-brand-gold/20 shadow-md shadow-brand-gold/5'
@@ -89,7 +90,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                     {isActive && (
                       <span className="absolute left-[-8px] top-1/4 bottom-1/4 w-[3px] bg-brand-gold rounded-r-md" />
                     )}
-                  </button>
+                  </Link>
                   
                   {/* Premium Hover Tooltip */}
                   <span className="absolute left-[70px] top-1/2 -translate-y-1/2 bg-[#12141c] border border-brand-border text-[10px] font-bold text-white px-2.5 py-1.5 rounded-lg opacity-0 pointer-events-none group-hover:opacity-100 transition duration-150 shadow-xl whitespace-nowrap z-50">
@@ -157,12 +158,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               const Icon = item.icon;
               const isActive = pathname === item.path;
               return (
-                <button
+                <Link
                   key={item.path}
-                  onClick={() => {
-                    router.push(item.path);
-                    setIsMobileMenuOpen(false);
-                  }}
+                  href={item.path}
+                  onClick={() => setIsMobileMenuOpen(false)}
                   className={`w-full flex items-center gap-4 px-5 py-4 rounded-xl text-base font-semibold cursor-pointer transition ${
                     isActive
                       ? 'bg-[#1b1e28] text-brand-gold border border-brand-gold/10'
@@ -171,7 +170,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 >
                   <Icon className="w-6 h-6" />
                   {item.name}
-                </button>
+                </Link>
               );
             })}
           </nav>
@@ -212,16 +211,16 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           const Icon = item.icon;
           const isActive = pathname === item.path;
           return (
-            <button
+            <Link
               key={item.path}
-              onClick={() => router.push(item.path)}
+              href={item.path}
               className={`flex flex-col items-center justify-center w-14 h-12 rounded-xl transition duration-150 cursor-pointer ${
                 isActive ? 'text-brand-gold' : 'text-brand-text-soft'
               }`}
             >
               <Icon className="w-5 h-5" />
               <span className="text-[10px] mt-1 font-medium">{item.name}</span>
-            </button>
+            </Link>
           );
         })}
       </nav>

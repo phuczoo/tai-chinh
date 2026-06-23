@@ -1,5 +1,7 @@
 'use server';
 
+import { getCachedUser } from '@/lib/auth-check';
+
 import { createClient } from '@/lib/supabase/server';
 import { Transaction, TransactionType, TransactionStatus } from '@/types';
 import { revalidatePath } from 'next/cache';
@@ -21,7 +23,7 @@ interface CreateTransactionInput {
  */
 export async function createTransaction(input: CreateTransactionInput): Promise<Transaction> {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCachedUser();
 
   if (!user) {
     throw new Error('Người dùng chưa đăng nhập.');
@@ -67,7 +69,7 @@ export async function updateTransaction(
   input: Partial<CreateTransactionInput>
 ): Promise<Transaction> {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCachedUser();
 
   if (!user) {
     throw new Error('Người dùng chưa đăng nhập.');
@@ -112,7 +114,7 @@ export async function updateTransaction(
  */
 export async function deleteTransaction(id: string): Promise<void> {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCachedUser();
 
   if (!user) {
     throw new Error('Người dùng chưa đăng nhập.');
@@ -138,7 +140,7 @@ export async function deleteTransaction(id: string): Promise<void> {
  */
 export async function getRecentTransactions(limit: number = 5): Promise<Transaction[]> {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCachedUser();
 
   if (!user) {
     throw new Error('Người dùng chưa đăng nhập.');
@@ -170,7 +172,7 @@ export async function getExpenseBreakdown(
   endDate?: string
 ): Promise<CategoryBreakdown[]> {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCachedUser();
 
   if (!user) {
     throw new Error('Người dùng chưa đăng nhập.');
@@ -232,7 +234,7 @@ export interface MonthNetWorth {
 
 export async function getNetWorthTrend(): Promise<MonthNetWorth[]> {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCachedUser();
 
   if (!user) {
     throw new Error('Người dùng chưa đăng nhập.');
@@ -317,7 +319,7 @@ export async function getTransactionsRange(
   endDate?: string
 ): Promise<Transaction[]> {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCachedUser();
 
   if (!user) {
     throw new Error('Người dùng chưa đăng nhập.');

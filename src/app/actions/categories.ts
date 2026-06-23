@@ -1,5 +1,7 @@
 'use server';
 
+import { getCachedUser } from '@/lib/auth-check';
+
 import { createClient } from '@/lib/supabase/server';
 import { Category } from '@/types';
 import { revalidatePath } from 'next/cache';
@@ -20,7 +22,7 @@ const DEFAULT_CATEGORIES = [
  */
 export async function getCategories(): Promise<Category[]> {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCachedUser();
 
   if (!user) {
     throw new Error('Người dùng chưa đăng nhập.');
@@ -64,7 +66,7 @@ export async function getCategories(): Promise<Category[]> {
  */
 export async function createCategory(name: string, icon: string, color: string): Promise<Category> {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCachedUser();
 
   if (!user) {
     throw new Error('Người dùng chưa đăng nhập.');
@@ -106,7 +108,7 @@ export async function createCategory(name: string, icon: string, color: string):
  */
 export async function deleteCategory(id: string): Promise<void> {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCachedUser();
 
   if (!user) {
     throw new Error('Người dùng chưa đăng nhập.');

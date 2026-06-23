@@ -1,32 +1,30 @@
 'use client';
 
-import React from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Calendar, Filter } from 'lucide-react';
+import { useAnalyticsTransition } from './AnalyticsTransitionContext';
 
 export default function AnalyticsFilterBar() {
-  const router = useRouter();
   const searchParams = useSearchParams();
+  const { isPending, updateFilter } = useAnalyticsTransition();
+  const [pendingValue, setPendingValue] = useState<string | null>(null);
 
   // Đọc bộ lọc hiện tại trên URL
   const range = searchParams.get('range') || 'THIS_MONTH';
   const customStart = searchParams.get('customStart') || '';
   const customEnd = searchParams.get('customEnd') || '';
 
-  const updateFilter = (newRange: string, start?: string, end?: string) => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set('range', newRange);
-    
-    if (newRange === 'CUSTOM') {
-      if (start !== undefined) params.set('customStart', start);
-      if (end !== undefined) params.set('customEnd', end);
-    } else {
-      params.delete('customStart');
-      params.delete('customEnd');
+  // Đồng bộ lại nút loading khi transition kết thúc
+  useEffect(() => {
+    if (!isPending) {
+      setPendingValue(null);
     }
+  }, [isPending]);
 
-    // scroll: false giúp ngăn chặn tự động cuộn lên đầu trang, chống giật màn hình
-    router.replace(`/analytics?${params.toString()}`, { scroll: false });
+  const handleFilterClick = (value: string) => {
+    setPendingValue(value);
+    updateFilter(value);
   };
 
   const presets = [
@@ -40,27 +38,42 @@ export default function AnalyticsFilterBar() {
   return (
     <div className="glass-panel rounded-2xl p-5 shadow-xl space-y-4 print:hidden">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        {/* Title */}
+        {/* Title with global indicator */}
         <div className="flex items-center gap-2">
           <Filter className="w-5 h-5 text-brand-gold" />
           <h3 className="text-sm font-bold text-white uppercase tracking-wider">Bộ lọc thời gian phân bổ</h3>
+          {isPending && (
+            <span className="w-4 h-4 border-2 border-brand-gold/20 border-t-brand-gold rounded-full animate-spin ml-1.5" />
+          )}
         </div>
 
         {/* Preset Selectors */}
         <div className="flex flex-wrap gap-2">
-          {presets.map((p) => (
-            <button
-              key={p.value}
-              onClick={() => updateFilter(p.value)}
-              className={`px-3.5 py-1.5 rounded-xl border text-xs font-bold transition cursor-pointer ${
-                range === p.value
-                  ? 'bg-brand-gold border-brand-gold text-brand-charcoal'
-                  : 'bg-brand-border/30 border-brand-border/20 text-brand-text-soft hover:text-white hover:bg-brand-border/40'
-              }`}
-            >
-              {p.label}
-            </button>
-          ))}
+          {presets.map((p) => {
+            const isCurrentActive = range === p.value;
+            const isCurrentPending = pendingValue === p.value;
+            return (
+              <button
+                key={p.value}
+                onClick={() => handleFilterClick(p.value)}
+                disabled={isPending}
+                className={`px-3.5 py-1.5 rounded-xl border text-xs font-bold transition cursor-pointer flex items-center gap-1.5 ${
+                  isCurrentActive
+                    ? 'bg-brand-gold border-brand-gold text-brand-charcoal font-extrabold'
+                    : 'bg-brand-border/30 border-brand-border/20 text-brand-text-soft hover:text-white hover:bg-brand-border/40'
+                } ${isPending ? 'opacity-70 cursor-not-allowed' : ''}`}
+              >
+                {isCurrentPending && (
+                  <span className={`w-3.5 h-3.5 border-2 rounded-full animate-spin shrink-0 ${
+                    isCurrentActive 
+                      ? 'border-brand-charcoal/20 border-t-brand-charcoal' 
+                      : 'border-white/20 border-t-white'
+                  }`} />
+                )}
+                {p.label}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -74,8 +87,14 @@ export default function AnalyticsFilterBar() {
               <input
                 type="date"
                 value={customStart}
-                onChange={(e) => updateFilter('CUSTOM', e.target.value, customEnd)}
-                className="w-full bg-[#12141c] border border-brand-border focus:border-brand-gold focus:ring-1 focus:ring-brand-gold text-white text-xs rounded-xl pl-10 pr-4 py-2.5 outline-none transition"
+                disabled={isPending}
+                onChange={(e) => {
+                  setPendingValue('CUSTOM');
+                  updateFilter('CUSTOM', e.target.value, customEnd);
+                }}
+                className={`w-full bg-[#12141c] border border-brand-border focus:border-brand-gold focus:ring-1 focus:ring-brand-gold text-white text-xs rounded-xl pl-10 pr-4 py-2.5 outline-none transition ${
+                  isPending ? 'opacity-60 cursor-not-allowed' : ''
+                }`}
               />
             </div>
           </div>
@@ -87,8 +106,14 @@ export default function AnalyticsFilterBar() {
               <input
                 type="date"
                 value={customEnd}
-                onChange={(e) => updateFilter('CUSTOM', customStart, e.target.value)}
-                className="w-full bg-[#12141c] border border-brand-border focus:border-brand-gold focus:ring-1 focus:ring-brand-gold text-white text-xs rounded-xl pl-10 pr-4 py-2.5 outline-none transition"
+                disabled={isPending}
+                onChange={(e) => {
+                  setPendingValue('CUSTOM');
+                  updateFilter('CUSTOM', customStart, e.target.value);
+                }}
+                className={`w-full bg-[#12141c] border border-brand-border focus:border-brand-gold focus:ring-1 focus:ring-brand-gold text-white text-xs rounded-xl pl-10 pr-4 py-2.5 outline-none transition ${
+                  isPending ? 'opacity-60 cursor-not-allowed' : ''
+                }`}
               />
             </div>
           </div>
