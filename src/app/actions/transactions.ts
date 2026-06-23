@@ -44,7 +44,7 @@ export async function createTransaction(input: CreateTransactionInput): Promise<
   const { data, error } = await supabase
     .from('transactions')
     .insert([insertData])
-    .select('*, account:accounts!account_id(id, name, type), to_account:accounts!to_account_id(id, name, type), category:categories!category_id(id, name, icon, color)')
+    .select('*, account:accounts!account_id(id, name, type), to_account:accounts!to_account_id(id, name, type), category:categories!category_id(id, name, icon, color, type)')
     .single();
 
   if (error) {
@@ -93,7 +93,7 @@ export async function updateTransaction(
     .from('transactions')
     .update(updateData)
     .eq('id', id)
-    .select('*, account:accounts!account_id(id, name, type), to_account:accounts!to_account_id(id, name, type), category:categories!category_id(id, name, icon, color)')
+    .select('*, account:accounts!account_id(id, name, type), to_account:accounts!to_account_id(id, name, type), category:categories!category_id(id, name, icon, color, type)')
     .single();
 
   if (error) {
@@ -148,7 +148,7 @@ export async function getRecentTransactions(limit: number = 5): Promise<Transact
 
   const { data, error } = await supabase
     .from('transactions')
-    .select('*, account:accounts!account_id(id, name, type), to_account:accounts!to_account_id(id, name, type), category:categories!category_id(id, name, icon, color)')
+    .select('*, account:accounts!account_id(id, name, type), to_account:accounts!to_account_id(id, name, type), category:categories!category_id(id, name, icon, color, type)')
     .order('created_at', { ascending: false })
     .limit(limit);
 
@@ -180,7 +180,7 @@ export async function getExpenseBreakdown(
 
   let query = supabase
     .from('transactions')
-    .select('*, category:categories!category_id(id, name, icon, color)')
+    .select('*, category:categories!category_id(id, name, icon, color, type)')
     .eq('user_id', user.id)
     .eq('type', 'EXPENSE')
     .eq('status', 'SUCCESS');
@@ -327,7 +327,7 @@ export async function getTransactionsRange(
 
   let query = supabase
     .from('transactions')
-    .select('*, account:accounts!account_id(id, name, type), to_account:accounts!to_account_id(id, name, type), category:categories!category_id(id, name, icon, color)')
+    .select('*, account:accounts!account_id(id, name, type), to_account:accounts!to_account_id(id, name, type), category:categories!category_id(id, name, icon, color, type)')
     .eq('user_id', user.id)
     .eq('status', 'SUCCESS')
     .order('created_at', { ascending: false });

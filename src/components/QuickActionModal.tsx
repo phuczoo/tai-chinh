@@ -94,7 +94,8 @@ export default function QuickActionModal({
         }
 
         if (categories.length > 0) {
-          const foodCat = categories.find(c => c.name === 'Ăn uống') || categories[0];
+          const filtered = categories.filter(c => c.type === 'EXPENSE');
+          const foodCat = filtered.find(c => c.name.includes('Ăn uống')) || filtered[0] || categories[0];
           setCategoryId(foodCat.id);
         }
       }
@@ -120,13 +121,14 @@ export default function QuickActionModal({
     if (editingTransaction && !isFormInitialized.current) return;
 
     if (type === 'INCOME') {
-      const incomeCat = categories.find(c => c.name.includes('Thu nhập') || c.name.includes('Khác')) || categories[0];
+      const filtered = categories.filter(c => c.type === 'INCOME');
+      const incomeCat = filtered.find(c => c.name.includes('Lương')) || filtered[0] || categories[0];
       setCategoryId(incomeCat.id);
     } else if (type === 'TRANSFER') {
-      const otherCat = categories.find(c => c.name === 'Khác') || categories[0];
-      setCategoryId(otherCat.id);
+      setCategoryId('');
     } else {
-      const foodCat = categories.find(c => c.name === 'Ăn uống') || categories[0];
+      const filtered = categories.filter(c => c.type === 'EXPENSE');
+      const foodCat = filtered.find(c => c.name.includes('Ăn uống')) || filtered[0] || categories[0];
       setCategoryId(foodCat.id);
     }
   }, [type, categories, editingTransaction]);
@@ -189,7 +191,7 @@ export default function QuickActionModal({
         type,
         status,
         amount: numAmount,
-        category_id: type === 'EXPENSE' ? categoryId : null,
+        category_id: type === 'TRANSFER' ? null : (categoryId || null),
         description,
         to_account_id: type === 'TRANSFER' ? toAccountId : undefined,
         created_at: createdAt ? new Date(createdAt).toISOString() : undefined,
@@ -382,39 +384,41 @@ export default function QuickActionModal({
             )}
           </div>
 
-          {/* D. Categories Grid (EXPENSE ONLY) */}
-          {type === 'EXPENSE' && (
+          {/* D. Categories Grid (EXPENSE & INCOME) */}
+          {type !== 'TRANSFER' && (
             <div className="space-y-2">
               <label className="text-xs font-semibold text-brand-text-soft uppercase tracking-wider block">
-                Danh mục chi tiêu
+                {type === 'INCOME' ? 'Danh mục thu nhập' : 'Danh mục chi tiêu'}
               </label>
               <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                {categories.map((cat) => {
-                  const Icon = ICON_MAP[cat.icon] || MoreHorizontal;
-                  const isSelected = categoryId === cat.id;
-                  return (
-                    <button
-                      key={cat.id}
-                      type="button"
-                      onClick={() => setCategoryId(cat.id)}
-                      className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all duration-200 cursor-pointer ${
-                        isSelected
-                          ? 'border-brand-gold bg-brand-gold/10 text-brand-gold'
-                          : 'border-brand-border bg-[#12141c] text-brand-text-soft hover:text-white hover:border-brand-border/80'
-                      }`}
-                      style={{ 
-                        color: isSelected ? cat.color : undefined,
-                        borderColor: isSelected ? cat.color : undefined,
-                        backgroundColor: isSelected ? `${cat.color}15` : undefined
-                      }}
-                    >
-                      <Icon className="w-5 h-5 mb-1.5" />
-                      <span className="text-[10px] font-semibold text-center leading-tight">
-                        {cat.name}
-                      </span>
-                    </button>
-                  );
-                })}
+                {categories
+                  .filter((cat) => (cat.type || 'EXPENSE') === type)
+                  .map((cat) => {
+                    const Icon = ICON_MAP[cat.icon] || MoreHorizontal;
+                    const isSelected = categoryId === cat.id;
+                    return (
+                      <button
+                        key={cat.id}
+                        type="button"
+                        onClick={() => setCategoryId(cat.id)}
+                        className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all duration-200 cursor-pointer ${
+                          isSelected
+                            ? 'border-brand-gold bg-brand-gold/10 text-brand-gold'
+                            : 'border-brand-border bg-[#12141c] text-brand-text-soft hover:text-white hover:border-brand-border/80'
+                        }`}
+                        style={{ 
+                          color: isSelected ? cat.color : undefined,
+                          borderColor: isSelected ? cat.color : undefined,
+                          backgroundColor: isSelected ? `${cat.color}15` : undefined
+                        }}
+                      >
+                        <Icon className="w-5 h-5 mb-1.5" />
+                        <span className="text-[10px] font-semibold text-center leading-tight">
+                          {cat.name}
+                        </span>
+                      </button>
+                    );
+                  })}
               </div>
             </div>
           )}

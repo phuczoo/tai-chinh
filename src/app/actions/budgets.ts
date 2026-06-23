@@ -19,8 +19,8 @@ export async function getMonthlyBudgets(monthYear: string): Promise<Budget[]> {
     throw new Error('Người dùng chưa đăng nhập.');
   }
 
-  // 1. Lấy tất cả danh mục của user
-  const categories = await getCategories();
+  // 1. Lấy danh sách danh mục và chỉ giữ lại danh mục chi tiêu (EXPENSE)
+  const categories = (await getCategories()).filter(c => c.type === 'EXPENSE');
 
   // 2. Lấy dữ liệu ngân sách đã lưu trong tháng
   const { data: budgetsData, error } = await supabase

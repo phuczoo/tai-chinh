@@ -8,6 +8,7 @@ export interface Category {
   name: string;
   icon: string; // Tên icon Lucide
   color: string; // Mã màu hex
+  type: 'INCOME' | 'EXPENSE';
   created_at: string;
 }
 

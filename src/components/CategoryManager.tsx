@@ -66,6 +66,7 @@ const PRESET_COLORS = [
 ];
 
 export default function CategoryManager({ categories, onCategoryChange }: CategoryManagerProps) {
+  const [activeTab, setActiveTab] = useState<'EXPENSE' | 'INCOME'>('EXPENSE');
   const [name, setName] = useState('');
   const [selectedIcon, setSelectedIcon] = useState('Utensils');
   const [selectedColor, setSelectedColor] = useState('#e5c158');
@@ -83,10 +84,10 @@ export default function CategoryManager({ categories, onCategoryChange }: Catego
     setError(null);
 
     try {
-      await createCategory(name.trim(), selectedIcon, selectedColor);
+      await createCategory(name.trim(), selectedIcon, selectedColor, activeTab);
       setName('');
-      setSelectedIcon('Utensils');
-      setSelectedColor('#e5c158');
+      setSelectedIcon(activeTab === 'EXPENSE' ? 'Utensils' : 'TrendingUp');
+      setSelectedColor(activeTab === 'EXPENSE' ? '#e5c158' : '#10b981');
       
       router.refresh();
       if (onCategoryChange) onCategoryChange();
@@ -115,8 +116,35 @@ export default function CategoryManager({ categories, onCategoryChange }: Catego
     }
   };
 
+  const filteredCategories = categories.filter((c) => (c.type || 'EXPENSE') === activeTab);
+
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <div className="space-y-6">
+      {/* Tab Switcher */}
+      <div className="flex p-1 bg-[#12141c] rounded-xl border border-brand-border/60 max-w-xs shrink-0">
+        {(['EXPENSE', 'INCOME'] as const).map((tab) => (
+          <button
+            key={tab}
+            type="button"
+            onClick={() => {
+              setActiveTab(tab);
+              setSelectedIcon(tab === 'EXPENSE' ? 'Utensils' : 'TrendingUp');
+              setSelectedColor(tab === 'EXPENSE' ? '#e5c158' : '#10b981');
+            }}
+            className={`flex-1 py-2 text-xs font-bold rounded-lg cursor-pointer transition duration-200 ${
+              activeTab === tab
+                ? tab === 'INCOME'
+                  ? 'bg-neon-emerald text-brand-charcoal'
+                  : 'bg-brand-gold text-brand-charcoal'
+                : 'text-brand-text-soft hover:text-white'
+            }`}
+          >
+            {tab === 'INCOME' ? 'THU NHẬP' : 'CHI TIÊU'}
+          </button>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* Cột trái: Quản lý / Thêm mới */}
       <div className="lg:col-span-1 glass-panel rounded-2xl p-6 shadow-xl space-y-5 h-fit">
         <h3 className="text-base font-bold text-white flex items-center gap-2 border-b border-brand-border/40 pb-3">
@@ -238,15 +266,15 @@ export default function CategoryManager({ categories, onCategoryChange }: Catego
         <div className="flex items-center justify-between border-b border-brand-border/40 pb-3">
           <h3 className="text-base font-bold text-white flex items-center gap-2">
             <Tag className="w-4.5 h-4.5 text-brand-gold" />
-            Danh sách danh mục chi tiêu
+            Danh sách danh mục {activeTab === 'INCOME' ? 'thu nhập' : 'chi tiêu'}
           </h3>
           <span className="text-xs text-brand-text-soft font-semibold bg-brand-border/30 px-3 py-1 rounded-full">
-            {categories.length} Danh mục
+            {filteredCategories.length} Danh mục
           </span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[460px] overflow-y-auto pr-1 scrollbar-thin">
-          {categories.map((category) => {
+          {filteredCategories.map((category) => {
             const IconComponent = ICON_MAP[category.icon] || MoreHorizontal;
             
             return (
@@ -299,5 +327,6 @@ export default function CategoryManager({ categories, onCategoryChange }: Catego
         </div>
       </div>
     </div>
+  </div>
   );
 }
