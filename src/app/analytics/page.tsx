@@ -1,8 +1,10 @@
 import DashboardLayout from '@/components/DashboardLayout';
 import AnalyticsChart from '@/components/AnalyticsChart';
 import CategoryBreakdownChart from '@/components/CategoryBreakdownChart';
+import AnalyticsFilterBar from '@/components/AnalyticsFilterBar';
+import NetWorthTrendChart from '@/components/NetWorthTrendChart';
 import { getAnalyticsData, getWeeklyAnalyticsData } from '@/app/actions/budgets';
-import { getExpenseBreakdown } from '@/app/actions/transactions';
+import { getExpenseBreakdown, getNetWorthTrend } from '@/app/actions/transactions';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { Suspense } from 'react';
 import { TrendingUp, TrendingDown, Landmark, Sparkles, AlertTriangle } from 'lucide-react';
@@ -16,21 +18,31 @@ export const metadata = {
 
 export const dynamic = 'force-dynamic';
 
-export default async function AnalyticsPage() {
+interface SearchParams {
+  range?: string;
+  customStart?: string;
+  customEnd?: string;
+}
+
+export default async function AnalyticsPage(props: { searchParams: Promise<SearchParams> }) {
   await checkAuth(); // Kiểm tra bảo mật
+  const resolvedParams = await props.searchParams;
   
   return (
     <DashboardLayout>
-      <div className="p-6 max-w-7xl mx-auto w-full space-y-8">
+      <div className="p-6 max-w-7xl mx-auto w-full space-y-6">
         <div>
           <h1 className="text-2xl md:text-3xl font-extrabold text-white">Thống kê tài chính</h1>
           <p className="text-brand-text-soft text-sm mt-1">
             Theo dõi xu hướng thu nhập và chi tiêu ròng của bạn theo thời gian.
           </p>
         </div>
+
+        {/* Thanh bộ lọc khoảng thời gian */}
+        <AnalyticsFilterBar />
         
-        <Suspense fallback={<LoadingSpinner message="Đang phân tích dữ liệu 6 tháng qua..." />}>
-          <AnalyticsContent />
+        <Suspense fallback={<LoadingSpinner message="Đang phân tích dữ liệu..." />}>
+          <AnalyticsContent searchParams={resolvedParams} />
         </Suspense>
       </div>
     </DashboardLayout>
@@ -41,15 +53,54 @@ const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
 };
 
-async function AnalyticsContent() {
-  const now = new Date();
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-  const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999).toISOString();
+async function AnalyticsContent({ searchParams }: { searchParams: SearchParams }) {
+  const range = searchParams.range || 'THIS_MONTH';
+  let startDateStr: string | undefined = undefined;
+  let endDateStr: string | undefined = undefined;
 
-  const [analyticsData, weeklyAnalyticsData, breakdownData] = await Promise.all([
+  const now = new Date();
+
+  if (range === '1W') {
+    const d = new Date();
+    d.setDate(now.getDate() - 6);
+    d.setHours(0, 0, 0, 0);
+    startDateStr = d.toISOString();
+  } else if (range === '30D') {
+    const d = new Date();
+    d.setDate(now.getDate() - 29);
+    d.setHours(0, 0, 0, 0);
+    startDateStr = d.toISOString();
+  } else if (range === 'THIS_MONTH') {
+    const d = new Date(now.getFullYear(), now.getMonth(), 1);
+    startDateStr = d.toISOString();
+    
+    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+    endDateStr = end.toISOString();
+  } else if (range === 'LAST_MONTH') {
+    const d = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    startDateStr = d.toISOString();
+
+    const end = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+    endDateStr = end.toISOString();
+  } else if (range === 'CUSTOM') {
+    if (searchParams.customStart) {
+      const d = new Date(searchParams.customStart);
+      d.setHours(0, 0, 0, 0);
+      startDateStr = d.toISOString();
+    }
+    if (searchParams.customEnd) {
+      const d = new Date(searchParams.customEnd);
+      d.setHours(23, 59, 59, 999);
+      endDateStr = d.toISOString();
+    }
+  }
+
+  // Tải dữ liệu song song từ các Server Actions
+  const [analyticsData, weeklyAnalyticsData, breakdownData, netWorthData] = await Promise.all([
     getAnalyticsData(),
     getWeeklyAnalyticsData(),
-    getExpenseBreakdown(startOfMonth, endOfMonth)
+    getExpenseBreakdown(startDateStr, endDateStr),
+    getNetWorthTrend()
   ]);
 
   // Tính tổng thu, tổng chi và tiết kiệm ròng của 6 tháng qua
@@ -59,7 +110,7 @@ async function AnalyticsContent() {
   const savingsRate = totalIncome > 0 ? Math.round((netSavings / totalIncome) * 100) : 0;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Analytics Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         {/* Card 1: Total Income */}
@@ -118,6 +169,11 @@ async function AnalyticsContent() {
         <div className="lg:col-span-5 xl:col-span-4">
           <CategoryBreakdownChart data={breakdownData} />
         </div>
+      </div>
+
+      {/* Biểu đồ tài sản ròng Net Worth */}
+      <div className="w-full">
+        <NetWorthTrendChart data={netWorthData} />
       </div>
 
       {/* Motivational Tip */}
