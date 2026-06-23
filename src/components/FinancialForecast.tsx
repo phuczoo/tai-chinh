@@ -45,6 +45,15 @@ const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
 };
 
+const formatMonthLabel = (label: string) => {
+  const match = label.match(/T(\d+)/);
+  if (match) {
+    const monthNum = parseInt(match[1]);
+    return `Thg ${String(monthNum).padStart(2, '0')}`;
+  }
+  return label;
+};
+
 export default function FinancialForecast({ analyticsData = [], netWorthData = [] }: FinancialForecastProps) {
   // 1. Tính toán số dư hiện tại & tốc độ tích lũy trung bình hàng tháng của 6 tháng qua
   const currentNetWorth = netWorthData.length > 0 ? netWorthData[netWorthData.length - 1].netWorth : 0;
@@ -60,6 +69,40 @@ export default function FinancialForecast({ analyticsData = [], netWorthData = [
   const [goalType, setGoalType] = useState<GoalType>('EMERGENCY');
   const [additionalSavings, setAdditionalSavings] = useState<number>(0); // Tiết kiệm bổ sung hàng tháng (Slider)
   const amountInputRef = useRef<HTMLInputElement>(null);
+
+  // Load from localStorage on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const storedAmount = localStorage.getItem('ff_target_amount');
+      const storedGoalType = localStorage.getItem('ff_goal_type');
+      const storedSavings = localStorage.getItem('ff_additional_savings');
+
+      if (storedAmount) {
+        const num = Number(storedAmount);
+        setTargetAmount(num);
+        setAmountInput(new Intl.NumberFormat('vi-VN').format(num));
+      }
+      if (storedGoalType) {
+        setGoalType(storedGoalType as GoalType);
+      }
+      if (storedSavings) {
+        setAdditionalSavings(Number(storedSavings));
+      }
+    }
+  }, []);
+
+  // Save changes to localStorage
+  useEffect(() => {
+    localStorage.setItem('ff_target_amount', String(targetAmount));
+  }, [targetAmount]);
+
+  useEffect(() => {
+    localStorage.setItem('ff_goal_type', goalType);
+  }, [goalType]);
+
+  useEffect(() => {
+    localStorage.setItem('ff_additional_savings', String(additionalSavings));
+  }, [additionalSavings]);
 
   // Tổng số dư tích lũy hàng tháng trong tương lai = trung bình thực tế + bổ sung
   const futureMonthlySavingsRate = averageMonthlySavings + additionalSavings;
@@ -124,7 +167,7 @@ export default function FinancialForecast({ analyticsData = [], netWorthData = [
     // A. Thêm các tháng quá khứ (T-5 đến T-1)
     for (let i = 0; i < netWorthData.length - 1; i++) {
       dataList.push({
-        name: netWorthData[i].name,
+        name: formatMonthLabel(netWorthData[i].name),
         history: netWorthData[i].netWorth,
         forecast: null
       });
@@ -133,7 +176,7 @@ export default function FinancialForecast({ analyticsData = [], netWorthData = [
     // B. Điểm hiện tại (Junction Point): Cả history và forecast BẮT BUỘC phải chung giá trị để kết nối liền mạch
     const lastLabel = netWorthData[netWorthData.length - 1].name;
     dataList.push({
-      name: `${lastLabel} (Nay)`,
+      name: `${formatMonthLabel(lastLabel)} (Nay)`,
       history: currentNetWorth,
       forecast: currentNetWorth
     });
@@ -147,7 +190,7 @@ export default function FinancialForecast({ analyticsData = [], netWorthData = [
       const futureMonthNum = ((lastMonthNum + i - 1) % 12) + 1;
       runningWorth += futureMonthlySavingsRate;
       dataList.push({
-        name: `T${futureMonthNum} (Dự báo)`,
+        name: `Thg ${String(futureMonthNum).padStart(2, '0')} (Dự báo)`,
         history: null,
         forecast: Math.max(0, runningWorth) // Ngăn tài sản ròng âm quá mức hiển thị
       });
@@ -358,9 +401,22 @@ export default function FinancialForecast({ analyticsData = [], netWorthData = [
                 <label className="text-[10px] font-bold text-brand-text-soft uppercase tracking-wider">
                   Tích lũy bổ sung hàng tháng
                 </label>
-                <span className="text-xs font-bold text-brand-gold">
-                  +{formatCurrency(additionalSavings)}/tháng
-                </span>
+                <div className="flex items-center gap-1 bg-[#12141c]/60 border border-brand-border/60 px-2 py-0.5 rounded-lg">
+                  <span className="text-xs font-bold text-brand-gold">+</span>
+                  <input
+                    type="number"
+                    min="0"
+                    max="50000000"
+                    step="500000"
+                    value={additionalSavings}
+                    onChange={(e) => {
+                      const val = Number(e.target.value);
+                      setAdditionalSavings(isNaN(val) ? 0 : Math.min(50000000, Math.max(0, val)));
+                    }}
+                    className="w-20 bg-transparent text-xs font-bold text-brand-gold outline-none border-none [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none text-right"
+                  />
+                  <span className="text-xs font-bold text-brand-gold">đ/tháng</span>
+                </div>
               </div>
               <input
                 type="range"
@@ -394,7 +450,11 @@ export default function FinancialForecast({ analyticsData = [], netWorthData = [
                   </p>
                 </div>
                 <p className="text-[10px] text-brand-text-soft max-w-xs leading-normal">
-                  Hiện tại dòng tiền chi tiêu của bạn đang lớn hơn thu nhập. Vui lòng kéo thanh slider để tăng mức tiết kiệm bổ sung (ít nhất lớn hơn {(Math.abs(averageMonthlySavings) / 1000000).toFixed(1)}Mđ/tháng) hoặc cắt giảm các khoản chi tiêu để kích hoạt trình mô phỏng.
+                  {`Hiện tại dòng tiền chi tiêu của bạn đang lớn hơn thu nhập. Vui lòng kéo thanh slider hoặc nhập trực tiếp để tăng mức tiết kiệm bổ sung (ít nhất lớn hơn ${
+                    Math.abs(averageMonthlySavings) >= 1000000
+                      ? `${(Math.abs(averageMonthlySavings) / 1000000).toFixed(1)}Mđ`
+                      : formatCurrency(Math.abs(averageMonthlySavings))
+                  }/tháng) hoặc cắt giảm các khoản chi tiêu để kích hoạt trình mô phỏng.`}
                 </p>
               </div>
             ) : targetAmount <= 0 ? (
