@@ -61,7 +61,11 @@ export default function FinancialForecast({ analyticsData = [], netWorthData = [
   // Tính trung bình thu chi 6 tháng
   const totalIncome = analyticsData.reduce((sum, d) => sum + d.income, 0);
   const totalExpense = analyticsData.reduce((sum, d) => sum + d.expense, 0);
-  const averageMonthlySavings = analyticsData.length > 0 ? (totalIncome - totalExpense) / analyticsData.length : 0;
+  
+  // Chỉ chia cho số tháng thực tế có hoạt động tài chính (để xử lý lỗi khởi đầu lạnh / cold start)
+  const activeMonths = analyticsData.filter(d => d.income > 0 || d.expense > 0);
+  const activeMonthsCount = activeMonths.length > 0 ? activeMonths.length : 1;
+  const averageMonthlySavings = (totalIncome - totalExpense) / activeMonthsCount;
 
   // 2. State cho trình giả lập mục tiêu tích lũy
   const [targetAmount, setTargetAmount] = useState<number>(0);
