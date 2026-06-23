@@ -47,7 +47,7 @@ const CustomTooltip = ({ active, payload, label, filter }: any) => {
 };
 
 export default function AnalyticsChart({ data, weeklyData = [] }: AnalyticsChartProps) {
-  const [filter, setFilter] = useState<string>('6M');
+  const [filter, setFilter] = useState<string>('1W');
 
   // Quyết định dùng dataset nào dựa trên bộ lọc
   const chartData = filter === '1W' && weeklyData.length > 0 ? weeklyData : data;
