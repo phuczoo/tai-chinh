@@ -9,6 +9,24 @@ export default function DashboardLoading() {
         <div className="h-4 w-96 bg-brand-text-soft/20 rounded-lg" />
       </div>
 
+      {/* Daily Budget Widget Skeleton */}
+      <div className="glass-panel rounded-2xl p-5 border border-brand-border/20 bg-gradient-to-r from-white/5 to-transparent h-[106px] flex flex-col md:flex-row justify-between items-start md:items-center gap-5">
+        <div className="space-y-2 flex-1 w-full">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 bg-white/10 rounded-lg" />
+            <div className="h-3 w-40 bg-white/10 rounded-md" />
+            <div className="h-3 w-16 bg-white/10 rounded-full" />
+          </div>
+          <div className="h-6 w-80 bg-white/15 rounded-lg mt-1" />
+          <div className="h-3 w-96 bg-white/5 rounded-md" />
+        </div>
+        <div className="w-full md:w-64 space-y-2 shrink-0">
+          <div className="h-3 w-28 bg-white/10 rounded-md" />
+          <div className="h-3.5 w-full bg-white/5 rounded-full" />
+          <div className="h-2 w-32 bg-white/5 rounded-md" />
+        </div>
+      </div>
+
       {/* Filter Bar Skeleton (Matches AnalyticsFilterBar height and structure) */}
       <div className="glass-panel rounded-2xl p-5 border border-brand-border/40 h-[82px] flex items-center justify-between">
         <div className="flex items-center gap-2">

@@ -3,7 +3,7 @@
 import { getCachedUser } from '@/lib/auth-check';
 
 import { createClient } from '@/lib/supabase/server';
-import { Budget } from '@/types';
+import { Budget, DailyBudgetStatus } from '@/types';
 import { revalidatePath } from 'next/cache';
 import { getCategories } from './categories';
 
@@ -284,4 +284,87 @@ export async function getWeeklyAnalyticsData(): Promise<MonthAnalytics[]> {
       expense: stats.expense,
     };
   });
+}
+
+/**
+ * Tính toán Hạn mức chi tiêu hàng ngày (Smart Daily Budget Assistant).
+ * Fix Moving Target Math & Timezone Bug.
+ */
+export async function getDailyBudgetStatus(): Promise<DailyBudgetStatus> {
+  const supabase = await createClient();
+  const user = await getCachedUser();
+
+  if (!user) {
+    throw new Error('Người dùng chưa đăng nhập.');
+  }
+
+  // 1. Lấy ngày giờ hiện tại theo múi giờ Việt Nam (GMT+7)
+  const tz = 'Asia/Ho_Chi_Minh';
+  const now = new Date();
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: tz,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false
+  });
+  
+  const parts = formatter.formatToParts(now);
+  const year = parseInt(parts.find(p => p.type === 'year')!.value);
+  const month = parseInt(parts.find(p => p.type === 'month')!.value);
+  const day = parseInt(parts.find(p => p.type === 'day')!.value);
+
+  const currentMonthYear = `${year}-${String(month).padStart(2, '0')}`;
+
+  // 2. Tính số ngày còn lại của tháng (bao gồm cả hôm nay) theo giờ Việt Nam
+  const totalDaysInMonth = new Date(year, month, 0).getDate();
+  const daysLeft = totalDaysInMonth - day + 1;
+
+  // 3. Lấy thời gian bắt đầu ngày hôm nay 00:00:00 theo múi giờ Việt Nam, quy đổi về UTC ISO String
+  const startUTC = new Date(Date.UTC(year, month - 1, day, 0, 0, 0) - (7 * 60 * 60 * 1000)).toISOString();
+
+  // 4. Lấy dữ liệu ngân sách đã lưu trong tháng
+  const { data: budgetsData, error: budgetError } = await supabase
+    .from('budgets')
+    .select('*')
+    .eq('month_year', currentMonthYear);
+
+  if (budgetError) {
+    throw new Error(`Lỗi lấy dữ liệu ngân sách: ${budgetError.message}`);
+  }
+
+  const totalLimit = budgetsData ? budgetsData.reduce((sum, b) => sum + Number(b.amount_limit), 0) : 0;
+  const totalSpent = budgetsData ? budgetsData.reduce((sum, b) => sum + Number(b.amount_spent), 0) : 0;
+  const remainingBudget = Math.max(0, totalLimit - totalSpent);
+
+  // 5. Lấy tổng số tiền chi tiêu thành công hôm nay
+  const { data: todayTxs, error: txError } = await supabase
+    .from('transactions')
+    .select('amount')
+    .eq('user_id', user.id)
+    .eq('type', 'EXPENSE')
+    .eq('status', 'SUCCESS')
+    .gte('created_at', startUTC);
+
+  if (txError) {
+    throw new Error(`Lỗi lấy dữ liệu giao dịch hôm nay: ${txError.message}`);
+  }
+
+  const todaySpent = todayTxs ? todayTxs.reduce((sum, tx) => sum + Number(tx.amount), 0) : 0;
+
+  // 6. Tính toán logic di động (Fix Moving Target Math)
+  const remainingBudgetAtStartOfToday = totalLimit - totalSpent + todaySpent;
+  const dailyBudget = remainingBudgetAtStartOfToday > 0 ? Math.ceil(remainingBudgetAtStartOfToday / daysLeft) : 0;
+
+  return {
+    totalLimit,
+    totalSpent,
+    remainingBudget,
+    daysLeft,
+    dailyBudget,
+    todaySpent
+  };
 }

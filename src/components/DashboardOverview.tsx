@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Account, Transaction, Budget, Category } from '@/types';
+import { Account, Transaction, Budget, Category, DailyBudgetStatus } from '@/types';
 import { updateInitialBalance } from '@/app/actions/accounts';
 import { MonthAnalytics } from '@/app/actions/budgets';
 import { useRouter } from 'next/navigation';
@@ -28,7 +28,8 @@ import {
   Sun,
   Moon,
   Share2,
-  Download
+  Download,
+  HeartPulse
 } from 'lucide-react';
 
 interface DashboardOverviewProps {
@@ -39,6 +40,7 @@ interface DashboardOverviewProps {
   analyticsData: MonthAnalytics[];
   weeklyAnalyticsData: MonthAnalytics[];
   categories: Category[];
+  dailyBudgetStatus: DailyBudgetStatus;
 }
 
 const WALLET_THEMES: Record<string, { gradient: string; text: string; border: string; glow: string }> = {
@@ -101,7 +103,8 @@ export default function DashboardOverview({
   currentMonthYear,
   analyticsData,
   weeklyAnalyticsData,
-  categories
+  categories,
+  dailyBudgetStatus
 }: DashboardOverviewProps) {
   const [accounts, setAccounts] = useState<Account[]>(initialAccounts);
   const [transactions, setTransactions] = useState<Transaction[]>(initialTransactions);
@@ -565,6 +568,109 @@ export default function DashboardOverview({
           </button>
         </div>
       </div>
+
+      {/* ==========================================
+          SMART DAILY BUDGET ASSISTANT WIDGET
+          ========================================== */}
+      {(() => {
+        const dailyBudget = dailyBudgetStatus?.dailyBudget || 0;
+        const todaySpent = dailyBudgetStatus?.todaySpent || 0;
+        
+        let percentage = 0;
+        if (dailyBudget > 0) {
+          percentage = Math.round((todaySpent / dailyBudget) * 100);
+        }
+
+        let healthColor = 'emerald'; 
+        let healthText = 'Ngân sách hôm nay rất an toàn. Chi tiêu hợp lý!';
+        let bgClass = 'from-neon-emerald/5 via-transparent to-transparent';
+        let borderClass = 'border-neon-emerald/30';
+        let textClass = 'text-neon-emerald';
+        let glowClass = 'shadow-neon-emerald/5';
+
+        if (dailyBudget === 0) {
+          healthColor = 'rose';
+          healthText = 'Bạn chưa thiết lập ngân sách hoặc ngân sách tháng hiện tại đã cạn kiệt!';
+          bgClass = 'from-neon-rose/5 via-transparent to-transparent';
+          borderClass = 'border-neon-rose/30';
+          textClass = 'text-neon-rose';
+          glowClass = 'shadow-neon-rose/5';
+        } else if (percentage > 90) {
+          healthColor = 'rose';
+          healthText = 'Hãy thắt lưng buộc bụng cho ngày hôm nay! Bạn đã tiêu gần hết hoặc vượt quá hạn mức ngày.';
+          bgClass = 'from-neon-rose/5 via-transparent to-transparent';
+          borderClass = 'border-neon-rose/30';
+          textClass = 'text-neon-rose';
+          glowClass = 'shadow-neon-rose/5';
+        } else if (percentage >= 50) {
+          healthColor = 'amber';
+          healthText = 'Cảnh báo: Bạn đã chi tiêu quá 50% hạn mức hôm nay. Hãy cân nhắc kỹ trước khi chi tiêu thêm!';
+          bgClass = 'from-[#fb923c]/5 via-transparent to-transparent';
+          borderClass = 'border-[#fb923c]/30';
+          textClass = 'text-[#fb923c]';
+          glowClass = 'shadow-[#fb923c]/5';
+        }
+
+        return (
+          <div className={`glass-panel rounded-2xl p-5 border ${borderClass} bg-gradient-to-r ${bgClass} shadow-lg ${glowClass} flex flex-col md:flex-row justify-between items-start md:items-center gap-5 transition-all duration-300`}>
+            <div className="space-y-1.5 flex-1 w-full">
+              <div className="flex items-center gap-2">
+                <div className={`p-1.5 rounded-lg border ${borderClass} ${textClass}`}>
+                  <HeartPulse className="w-4 h-4" />
+                </div>
+                <span className="text-[10px] font-bold text-brand-text-soft uppercase tracking-wider">
+                  Smart Daily Budget Assistant
+                </span>
+                <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${
+                  healthColor === 'emerald'
+                    ? 'bg-neon-emerald/10 border-neon-emerald/20 text-neon-emerald'
+                    : healthColor === 'amber'
+                      ? 'bg-neon-amber/10 border-[#fb923c]/20 text-[#fb923c]'
+                      : 'bg-neon-rose/10 border-neon-rose/20 text-neon-rose'
+                }`}>
+                  {healthColor === 'emerald' ? 'An toàn' : healthColor === 'amber' ? 'Cảnh báo' : 'Vượt chi / Nguy hiểm'}
+                </span>
+              </div>
+              
+              <div className="flex flex-col sm:flex-row sm:items-baseline gap-1.5 sm:gap-3 pt-1">
+                <h2 className="text-xl md:text-2xl font-black text-white tracking-tight">
+                  Hạn mức chi tiêu hôm nay: <span className="text-brand-gold">{formatCurrency(dailyBudget, showBalance)}</span>
+                </h2>
+                <span className="text-xs font-semibold text-brand-text-soft">
+                  (Đã tiêu: {formatCurrency(todaySpent, showBalance)})
+                </span>
+              </div>
+              
+              <p className="text-[11px] text-brand-text-soft font-medium leading-relaxed">
+                {healthText}
+              </p>
+            </div>
+
+            <div className="w-full md:w-64 space-y-2 shrink-0">
+              <div className="flex justify-between items-center text-[10px] font-bold text-brand-text-soft">
+                <span>Tiến trình ngày hôm nay</span>
+                <span className={textClass}>{percentage}%</span>
+              </div>
+              <div className="w-full bg-[#12141c] rounded-full h-3.5 border border-brand-border overflow-hidden p-0.5">
+                <div 
+                  className={`h-full rounded-full transition-all duration-500 ease-out ${
+                    healthColor === 'emerald'
+                      ? 'bg-neon-emerald shadow-[0_0_8px_rgba(16,185,129,0.4)]'
+                      : healthColor === 'amber'
+                        ? 'bg-[#fb923c] shadow-[0_0_8px_rgba(245,158,11,0.4)]'
+                        : 'bg-neon-rose shadow-[0_0_8px_rgba(244,63,94,0.4)]'
+                  }`}
+                  style={{ width: `${Math.min(100, percentage)}%` }}
+                />
+              </div>
+              <div className="flex justify-between text-[8px] font-semibold text-brand-text-soft/60">
+                <span>Đầu ngày</span>
+                <span>Hết hạn mức ({formatCurrency(dailyBudget, showBalance)})</span>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ==========================================
           THREE COLUMN MAIN GRID LAYOUT

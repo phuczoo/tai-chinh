@@ -52,6 +52,15 @@ export interface Budget {
   category?: Category;
 }
 
+export interface DailyBudgetStatus {
+  totalLimit: number;
+  totalSpent: number;
+  remainingBudget: number;
+  daysLeft: number;
+  dailyBudget: number;
+  todaySpent: number;
+}
+
 export const STATUS_LABELS: Record<TransactionStatus, string> = {
   SUCCESS: 'Thành công',
   PENDING: 'Đang xử lý',
